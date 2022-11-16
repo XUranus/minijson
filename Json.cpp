@@ -2,7 +2,7 @@
 #include <cstdio>
 
 using namespace xuranus::jsoncpp;
-
+using namespace xuranus::jsoncpp::util;
 
 JsonElement::JsonElement()
 {
@@ -14,11 +14,11 @@ JsonElement::JsonElement(JsonElement::Type type)
   m_type = type;
   switch (type) {
     case JsonElement::Type::JSON_OBJECT: {
-      m_value.objectValue = new std::map<std::string, JsonElement>();
+      m_value.objectValue = new JsonObject();
       break;
     }
     case JsonElement::Type::JSON_ARRAY: {
-      m_value.arrayValue = new std::vector<JsonElement>();
+      m_value.arrayValue = new JsonArray();
       break;
     }
     case JsonElement::Type::JSON_STRING: {
@@ -75,11 +75,11 @@ JsonElement::JsonElement(const JsonElement& ele): m_type(ele.m_type)
 {
   switch (ele.m_type) {
     case JsonElement::Type::JSON_OBJECT: {
-      m_value.objectValue = new std::map<std::string, JsonElement>(*ele.m_value.objectValue);
+      m_value.objectValue = new JsonObject(*ele.m_value.objectValue);
       break;
     }
     case JsonElement::Type::JSON_ARRAY: {
-      m_value.arrayValue = new std::vector<JsonElement>(*ele.m_value.arrayValue);
+      m_value.arrayValue = new JsonArray(*ele.m_value.arrayValue);
       break;
     }
     case JsonElement::Type::JSON_STRING: {
@@ -161,11 +161,11 @@ JsonElement& JsonElement::operator = (const JsonElement& ele)
   m_type = ele.m_type;
   switch (ele.m_type) {
     case JsonElement::Type::JSON_OBJECT: {
-      m_value.objectValue = new std::map<std::string, JsonElement>(*ele.m_value.objectValue);
+      m_value.objectValue = new JsonObject(*ele.m_value.objectValue);
       break;
     }
     case JsonElement::Type::JSON_ARRAY: {
-      m_value.arrayValue = new std::vector<JsonElement>(*ele.m_value.arrayValue);
+      m_value.arrayValue = new JsonArray(*ele.m_value.arrayValue);
       break;
     }
     case JsonElement::Type::JSON_STRING: {
@@ -269,51 +269,6 @@ bool JsonElement::IsString() const { return m_type == JsonElement::Type::JSON_ST
 bool JsonElement::IsJsonObject() const { return m_type == JsonElement::Type::JSON_OBJECT; }
 bool JsonElement::IsJsonArray() const { return m_type == JsonElement::Type::JSON_ARRAY; }
 
-
-std::string EscapeString(const std::string& str)
-{
-  std::string res;
-  for (const char ch: str) {
-    switch (ch) {
-      case '"':
-      case '\\':
-      case '/':
-        res.push_back('\\');
-        res.push_back(ch);
-      case '\f': {
-        res.push_back('\\');
-        res.push_back('f');
-        break;
-      }
-      case '\b': {
-        res.push_back('\\');
-        res.push_back('b');
-        break;
-      }
-      case '\r': {
-        res.push_back('\\');
-        res.push_back('r');
-        break;
-      }
-      case '\n': {
-        res.push_back('\\');
-        res.push_back('n');
-        break;
-      }
-      case '\t': {
-        res.push_back('\\');
-        res.push_back('t');
-        break;
-      }
-      default: {
-        res.push_back(ch);
-        break;
-      }
-    }
-  }
-  return res;
-}
-
 std::string JsonElement::Serialize() const
 {
   switch (m_type) {
@@ -324,44 +279,66 @@ std::string JsonElement::Serialize() const
       return m_value.boolValue ? "true" : "false";
     }
     case JsonElement::Type::JSON_NUMBER: {
-      return std::to_string(m_value.numberValue);
+      // TODO:: extract
+      std::string res = std::to_string(m_value.numberValue);
+      if (res.find('.') != std::string::npos) {
+        while(res.back() == '0') {
+          res.pop_back();
+        }
+      }
+      if (res.back() == '.') {
+        res.pop_back();
+      }
+      return res;
     }
     case JsonElement::Type::JSON_STRING: {
       return std::string("\"") + EscapeString(*m_value.stringValue) + "\"";
     }
     case JsonElement::Type::JSON_OBJECT: {
-      std::string res = "{";
-      for (const auto& kv: *m_value.objectValue) {
-        res += std::string("\"") + EscapeString(kv.first) + "\":\"" + kv.second.Serialize() + ",";
-      }
-      res.pop_back();
-      res += "}";
-      return res;
+      return JsonObject(*m_value.objectValue).Serialize();
     }
     case JsonElement::Type::JSON_ARRAY: {
-      std::string res = "[";
-      for (const auto& v: *m_value.arrayValue) {
-        res += v.Serialize() + ",";
-      }
-      res.pop_back();
-      res += "]";
-      return res;
+      return JsonArray(*m_value.arrayValue).Serialize();
     }
   }
   Panic("unknown type to serialize");
   return "";
 }
 
+std::string JsonObject::Serialize() const
+{
+  std::string res = "{";
+  bool moreThanOneItem = false;
+  for (const auto& kv: *this) {
+    moreThanOneItem = true;
+    res += std::string("\"") + EscapeString(kv.first) + "\":" + kv.second.Serialize() + ",";
+  }
+  if (moreThanOneItem) {
+    res.pop_back();
+  }
+  res += "}";
+  return res;
+}
+
+std::string JsonArray::Serialize() const
+{
+  std::string res = "[";
+  for (const auto& v: *this) {
+    res += v.Serialize() + ",";
+  }
+  res.pop_back();
+  res += "]";
+  return res;
+}
 
 
-
-
-JsonScanner::JsonScanner(const std::string &str): m_str(str), m_pos(0)
+JsonScanner::JsonScanner(const std::string &str): m_str(str), m_pos(0), m_prevPos(0)
 {}
 
 // return a non space token
 JsonScanner::Token JsonScanner::Next()
 {
+  m_prevPos = m_pos;
   if (m_str.length() <= m_pos || !SkipWhitespaceToken()) {
     return Token::EOF_TOKEN;
   }
@@ -483,7 +460,6 @@ JsonParser::JsonParser(const std::string str): m_scanner(str)
 JsonElement JsonParser::Parse()
 {
   JsonScanner::Token token = m_scanner.Next();
-  std::cout << "token " << token << std::endl;
   switch (token) {
     case JsonScanner::Token::OBJECT_BEGIN: {
       return ParseJsonObject();
@@ -569,4 +545,51 @@ JsonArray JsonParser::ParseJsonArray()
     }
   }
   return array;
+}
+
+
+
+
+std::string util::EscapeString(const std::string& str)
+{
+  std::string res;
+  for (const char ch: str) {
+    switch (ch) {
+      case '"':
+      case '\\':
+      case '/':
+        res.push_back('\\');
+        res.push_back(ch);
+      case '\f': {
+        res.push_back('\\');
+        res.push_back('f');
+        break;
+      }
+      case '\b': {
+        res.push_back('\\');
+        res.push_back('b');
+        break;
+      }
+      case '\r': {
+        res.push_back('\\');
+        res.push_back('r');
+        break;
+      }
+      case '\n': {
+        res.push_back('\\');
+        res.push_back('n');
+        break;
+      }
+      case '\t': {
+        res.push_back('\\');
+        res.push_back('t');
+        break;
+      }
+      default: {
+        res.push_back(ch);
+        break;
+      }
+    }
+  }
+  return res;
 }

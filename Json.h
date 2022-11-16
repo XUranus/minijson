@@ -1,12 +1,19 @@
 #ifndef _XURANUS_JSON_CPP_
 #define _XURANUS_JSON_CPP_
 
+#include <cstddef>
 #include <iostream>
+#include <stdexcept>
+#include <string>
 #include <string>
 #include <vector>
 #include <map>
 
-#define Panic(str, ...) ::printf(str"\n", ##__VA_ARGS__)
+#define Panic(str, ...) do { \
+  char message[100]; \
+  ::sprintf(message, str"\n", ##__VA_ARGS__); \
+  throw std::logic_error(message); \
+} while(0); \
 
 /**
  * https://www.json.org/json-en.html
@@ -25,11 +32,14 @@ namespace xuranus {
 namespace jsoncpp {
 
 class JsonElement;
+class JsonObject;
+class JsonArray;
 
-using JsonObject = std::map<std::string, JsonElement>;
-using JsonArray = std::vector<JsonElement>;
+class Serializable {
+  virtual std::string Serialize() const = 0;
+};
 
-class JsonElement {
+class JsonElement: public Serializable {
   public:
     enum class Type {
       JSON_OBJECT,
@@ -77,12 +87,24 @@ class JsonElement {
     bool IsJsonObject() const;
     bool IsJsonArray() const;
 
-    std::string Serialize() const;
+    std::string Serialize() const override;
 
   private:
     Type m_type = Type::JSON_NULL;
     Value m_value {};
 };
+
+class JsonObject: public std::map<std::string, JsonElement>, public Serializable {
+public:
+  std::string Serialize() const override;
+};
+
+class JsonArray: public std::vector<JsonElement>, public Serializable {
+public:
+  std::string Serialize() const override;
+};
+
+
 
 class JsonScanner {
   public:
@@ -107,7 +129,7 @@ class JsonScanner {
     Token Next();
     double GetNumberValue();
     std::string GetStringValue();
-    inline void RollBack() { m_pos --; }
+    inline void RollBack() { m_pos = m_prevPos; }
     inline size_t Position() { return m_pos; }
 
   private:  
@@ -143,6 +165,7 @@ class JsonScanner {
   private:
     std::string m_str;
     std::size_t m_pos = 0;
+    std::size_t m_prevPos = 0;
 
     std::string m_tmpStrValue {};
     double m_tmpNumberValue {0};
@@ -160,6 +183,58 @@ class JsonParser {
     JsonObject ParseJsonObject();
     JsonArray ParseJsonArray();
 };
+
+namespace util {
+  std::string EscapeString(const std::string& str);
+  std::string DoubleToString(double value);// TODO
+
+  template<typename T>
+  std::string Serialize(const T& value)
+  {
+    JsonObject object {};
+    value._json_field_map_(object, true); 
+    return object.Serialize();
+  }
+
+  template<typename T>
+  void Deserialize(const std::string& jsonStr, T& value)
+  {
+    JsonParser parser(jsonStr);
+    JsonElement ele = parser.Parse();
+    JsonObject object = ele.AsJsonObject();
+    value._json_field_map_(object, false);
+  }
+
+
+
+  template<typename T>
+  void SerializeTo(JsonObject &object, const std::string& key, const T& field)
+  {
+    object[key] = JsonElement(field);
+  }
+
+
+  void DeserializeFrom(JsonObject& object, const std::string& key, std::string& field) // TODO:: const JsonObject& object
+  {
+    auto& ele = object.find(key)->second;
+    std::string value = ele.AsString();
+    field = value;
+  }
+
+  void DeserializeFrom(JsonObject& object, const std::string& key, long& field)// TODO:: const JsonObject& object
+  {
+    auto& ele = object.find(key)->second;
+    long value = static_cast<long>(ele.AsNumber());
+    field = value;
+  }
+
+  // template<typename T>
+  // void DeserializeFrom(const JsonObject& object, const std::string& key, T& field)
+  // {
+  //   const auto& ele = *(object.find(key));
+  //   std::cout << typeid(T).name() << std::endl;
+  // }
+}
 
 }
 }
