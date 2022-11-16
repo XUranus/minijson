@@ -87,6 +87,14 @@ class JsonElement: public Serializable {
     bool IsJsonObject() const;
     bool IsJsonArray() const;
 
+    std::string TypeName() const;
+
+    template<typename T> void Cast(T& value) const {
+      //Panic("unsupport cast %s", typeid(T).name());
+      value._json_field_map_(*(m_value.objectValue), false);
+      return;
+    }
+
     std::string Serialize() const override;
 
   private:
@@ -213,27 +221,13 @@ namespace util {
     object[key] = JsonElement(field);
   }
 
-
-  void DeserializeFrom(JsonObject& object, const std::string& key, std::string& field) // TODO:: const JsonObject& object
+  template<typename T>
+  void DeserializeFrom(const JsonObject& object, const std::string& key, T& field)
   {
-    auto& ele = object.find(key)->second;
-    std::string value = ele.AsString();
-    field = value;
+    JsonElement ele = object.find(key)->second;
+    std::cout << typeid(T).name() << std::endl;
+    ele.Cast(field);
   }
-
-  void DeserializeFrom(JsonObject& object, const std::string& key, long& field)// TODO:: const JsonObject& object
-  {
-    auto& ele = object.find(key)->second;
-    long value = static_cast<long>(ele.AsNumber());
-    field = value;
-  }
-
-  // template<typename T>
-  // void DeserializeFrom(const JsonObject& object, const std::string& key, T& field)
-  // {
-  //   const auto& ele = *(object.find(key));
-  //   std::cout << typeid(T).name() << std::endl;
-  // }
 }
 
 }

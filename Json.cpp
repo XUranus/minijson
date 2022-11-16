@@ -269,6 +269,42 @@ bool JsonElement::IsString() const { return m_type == JsonElement::Type::JSON_ST
 bool JsonElement::IsJsonObject() const { return m_type == JsonElement::Type::JSON_OBJECT; }
 bool JsonElement::IsJsonArray() const { return m_type == JsonElement::Type::JSON_ARRAY; }
 
+std::string JsonElement::TypeName() const
+{
+  switch (m_type) {
+    case JsonElement::Type::JSON_OBJECT:
+      return "JSON_OBJECT";
+    case JsonElement::Type::JSON_ARRAY:
+      return "JSON_ARRAY";
+    case JsonElement::Type::JSON_STRING:
+      return "JSON_STRING";
+    case JsonElement::Type::JSON_NUMBER:
+      return "JSON_NUMBER";
+    case JsonElement::Type::JSON_BOOL:
+      return "JSON_BOOL";
+    case JsonElement::Type::JSON_NULL:
+      return "JSON_NULL";
+  }
+  Panic("invalid type");
+  return "";
+}
+
+template<> void JsonElement::Cast<long>(long& value) const {
+  if (!IsNumber()) {
+    Panic("illegal cast from %s to long", TypeName().c_str());
+  }
+  value = static_cast<long>(m_value.numberValue);
+  return;
+}
+
+template<> void JsonElement::Cast<std::string>(std::string& value) const {
+  if (!IsString()) {
+    Panic("illegal cast from %s to string", TypeName().c_str());
+  }
+  value = *(m_value.stringValue);
+  return;
+}
+
 std::string JsonElement::Serialize() const
 {
   switch (m_type) {
