@@ -262,6 +262,56 @@ JsonArray& JsonElement::AsJsonArray()
 }
 
 
+
+bool JsonElement::ToBool() const
+{
+  if (m_type != JsonElement::Type::JSON_BOOL) {
+    Panic("failed to convert json element as a bool");
+  }
+  return m_value.boolValue;
+}
+
+double JsonElement::ToNumber() const
+{
+  if (m_type != JsonElement::Type::JSON_NUMBER) {
+    Panic("failed to convert json element as a number");
+  }
+  return m_value.numberValue;
+}
+
+void* JsonElement::ToNull() const
+{
+  if (m_type != JsonElement::Type::JSON_NULL) {
+    Panic("failed to convert json element as a null");
+  }
+  return nullptr;
+}
+
+std::string JsonElement::ToString() const
+{
+  if (m_type != JsonElement::Type::JSON_STRING) {
+    Panic("failed to convert json element as a string");
+  }
+  return *(m_value.stringValue);
+}
+
+JsonObject JsonElement::ToJsonObject() const
+{
+  if (m_type != JsonElement::Type::JSON_OBJECT) {
+    Panic("failed to convert json element as an object");
+  }
+  return *(m_value.objectValue);
+}
+
+JsonArray JsonElement::ToJsonArray() const
+{
+  if (m_type != JsonElement::Type::JSON_ARRAY) {
+    Panic("failed to convert json element as an array");
+  }
+  return *(m_value.arrayValue);
+}
+
+
 bool JsonElement::IsNull() const { return m_type == JsonElement::Type::JSON_NULL; }
 bool JsonElement::IsBool() const { return m_type == JsonElement::Type::JSON_BOOL; }
 bool JsonElement::IsNumber() const { return m_type == JsonElement::Type::JSON_NUMBER; }
@@ -287,22 +337,6 @@ std::string JsonElement::TypeName() const
   }
   Panic("invalid type");
   return "";
-}
-
-template<> void JsonElement::Cast<long>(long& value) const {
-  if (!IsNumber()) {
-    Panic("illegal cast from %s to long", TypeName().c_str());
-  }
-  value = static_cast<long>(m_value.numberValue);
-  return;
-}
-
-template<> void JsonElement::Cast<std::string>(std::string& value) const {
-  if (!IsString()) {
-    Panic("illegal cast from %s to string", TypeName().c_str());
-  }
-  value = *(m_value.stringValue);
-  return;
 }
 
 std::string JsonElement::Serialize() const

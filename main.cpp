@@ -3,23 +3,6 @@
 
 using namespace xuranus::jsoncpp;
 
-#define SERIALIZE_SECTION_BEGIN \
-  void _json_field_map_(xuranus::jsoncpp::JsonObject& object, bool toJson) const \
-  { \
-
-#define SERIALIZE_SECTION_END \
-  }; \
-
-#define SERIALIZE_FIELD(KEY_NAME, ATTR_NAME) \
-  do { \
-    if (toJson) { \
-      xuranus::jsoncpp::util::SerializeTo(object, #KEY_NAME, ATTR_NAME); \
-    } else { \
-      xuranus::jsoncpp::util::DeserializeFrom(object, #KEY_NAME, ATTR_NAME); \
-    } \
-  } while (0) \
-
-
 struct Certificate {
   std::string name;
   long degree;
@@ -30,14 +13,27 @@ struct Certificate {
   SERIALIZE_SECTION_END
 };
 
+struct Employee {
+  std::string name;
+  Certificate certificate;
+
+  SERIALIZE_SECTION_BEGIN
+  SERIALIZE_FIELD(name, name);
+  SERIALIZE_FIELD(certificate, certificate);
+  SERIALIZE_SECTION_END
+};
+
 int main()
 {
-    Certificate cer {"C++", 1};
-    std::cout << util::Serialize(cer) << std::endl;
+  Employee employee {"xuranus", {"Java", 2}};
+  std::cout << util::Serialize(employee) << std::endl;
 
-    Certificate cer2 {};
-    util::Deserialize(util::Serialize(cer), cer2);
-    std::cout << cer2.name << std::endl;
+  Employee employee2;
+  //util::Deserialize(util::Serialize(employee), employee2);
+  util::Deserialize(R"({"certificate":{"degree":2,"name":"Java"},"name":"xuranus"})", employee2);
+  std::cout << employee2.name << std::endl;
+  std::cout << employee2.certificate.name << std::endl;
+  std::cout << employee2.certificate.degree << std::endl;
 }
 
 int main1()

@@ -9,12 +9,6 @@
 #include <vector>
 #include <map>
 
-#define Panic(str, ...) do { \
-  char message[100]; \
-  ::sprintf(message, str"\n", ##__VA_ARGS__); \
-  throw std::logic_error(message); \
-} while(0); \
-
 /**
  * https://www.json.org/json-en.html
  *
@@ -24,9 +18,6 @@
  *   |      |         |           |           |
  * null  JsonNumber  bool   JsonObject  JsonArray
  *        
- *
- *
- *
  **/
 namespace xuranus {
 namespace jsoncpp {
@@ -34,6 +25,28 @@ namespace jsoncpp {
 class JsonElement;
 class JsonObject;
 class JsonArray;
+
+#define SERIALIZE_SECTION_BEGIN \
+  void __XURANUS__JSON_CPP_SERIALIZE_METHOD__(xuranus::jsoncpp::JsonObject& object, bool toJson) \
+  { \
+
+#define SERIALIZE_SECTION_END \
+  }; \
+
+#define SERIALIZE_FIELD(KEY_NAME, ATTR_NAME) \
+  do { \
+    if (toJson) { \
+      xuranus::jsoncpp::util::SerializeTo(object, #KEY_NAME, ATTR_NAME); \
+    } else { \
+      xuranus::jsoncpp::util::DeserializeFrom(object, #KEY_NAME, ATTR_NAME); \
+    } \
+  } while (0) \
+
+#define Panic(str, ...) do { \
+  char message[100]; \
+  ::sprintf(message, str"\n", ##__VA_ARGS__); \
+  throw std::logic_error(message); \
+} while(0); \
 
 class Serializable {
   virtual std::string Serialize() const = 0;
@@ -79,6 +92,13 @@ class JsonElement: public Serializable {
     std::string& AsString();
     JsonObject& AsJsonObject();
     JsonArray& AsJsonArray();
+
+    bool ToBool() const;
+    double ToNumber() const;
+    void* ToNull() const;
+    std::string ToString() const;
+    JsonObject ToJsonObject() const;
+    JsonArray ToJsonArray() const;
     
     bool IsNull() const;
     bool IsBool() const;
@@ -88,13 +108,6 @@ class JsonElement: public Serializable {
     bool IsJsonArray() const;
 
     std::string TypeName() const;
-
-    template<typename T> void Cast(T& value) const {
-      //Panic("unsupport cast %s", typeid(T).name());
-      value._json_field_map_(*(m_value.objectValue), false);
-      return;
-    }
-
     std::string Serialize() const override;
 
   private:
@@ -192,15 +205,61 @@ class JsonParser {
     JsonArray ParseJsonArray();
 };
 
+
+template<typename T> struct JsonElementDeserializer {
+  void operator () (const JsonElement& ele, T& value) {
+    JsonObject object = ele.ToJsonObject();
+    value.__XURANUS__JSON_CPP_SERIALIZE_METHOD__(object, false);
+    return;
+  }
+};
+
+template<> struct JsonElementDeserializer<std::string> {
+  void operator () (const JsonElement& ele, std::string& value) {
+    value = ele.ToString();
+    return;
+  }
+};
+
+template<> struct JsonElementDeserializer<long> {
+  void operator () (const JsonElement& ele, long& value) {
+    value = static_cast<long>(ele.ToNumber());
+    return;
+  }
+};
+
+
+template<typename T> struct JsonElementSerializer {
+  JsonElement operator () (const T& value) {
+    JsonObject object {};
+    T* valueRef = reinterpret_cast<T*>((void*)&value);
+    valueRef->__XURANUS__JSON_CPP_SERIALIZE_METHOD__(object, true);
+    return JsonElement(object);
+  }
+};
+
+template<> struct JsonElementSerializer<std::string> {
+  JsonElement operator () (const std::string& value) {
+    return JsonElement(value);
+  }
+};
+
+template<> struct JsonElementSerializer<long> {
+  JsonElement operator () (const long& value) {
+    return JsonElement(value);
+  }
+};
+
+
 namespace util {
   std::string EscapeString(const std::string& str);
   std::string DoubleToString(double value);// TODO
 
   template<typename T>
-  std::string Serialize(const T& value)
+  std::string Serialize(T& value)
   {
     JsonObject object {};
-    value._json_field_map_(object, true); 
+    value.__XURANUS__JSON_CPP_SERIALIZE_METHOD__(object, true); 
     return object.Serialize();
   }
 
@@ -210,7 +269,7 @@ namespace util {
     JsonParser parser(jsonStr);
     JsonElement ele = parser.Parse();
     JsonObject object = ele.AsJsonObject();
-    value._json_field_map_(object, false);
+    value.__XURANUS__JSON_CPP_SERIALIZE_METHOD__(object, false);
   }
 
 
@@ -218,15 +277,16 @@ namespace util {
   template<typename T>
   void SerializeTo(JsonObject &object, const std::string& key, const T& field)
   {
-    object[key] = JsonElement(field);
+    JsonElementSerializer<T> serialize;
+    object[key] = serialize(field);
   }
 
   template<typename T>
   void DeserializeFrom(const JsonObject& object, const std::string& key, T& field)
   {
     JsonElement ele = object.find(key)->second;
-    std::cout << typeid(T).name() << std::endl;
-    ele.Cast(field);
+    JsonElementDeserializer<T> cast {};
+    cast(ele, field);
   }
 }
 
