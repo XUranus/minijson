@@ -23,7 +23,13 @@ struct Employee {
   SERIALIZE_SECTION_END
 };
 
-int main()
+int main() {
+  std::string str1 = "-1.23E3";
+  std::cout << JsonParser(str1).Parse().Serialize() << std::endl;
+  return 0;
+}
+
+int main2()
 {
   Employee employee {"xuranus", {"Java", 2}};
   std::cout << util::Serialize(employee) << std::endl;
@@ -34,6 +40,7 @@ int main()
   std::cout << employee2.name << std::endl;
   std::cout << employee2.certificate.name << std::endl;
   std::cout << employee2.certificate.degree << std::endl;
+  return 0;
 }
 
 int main1()

@@ -1,3 +1,13 @@
+/*================================================================
+*   Copyright (C) 2022 XUranus All rights reserved.
+*   
+*   File:         Xml.h
+*   Author:       XUranus
+*   Date:         2022-11-21
+*   Description:  
+*
+================================================================*/
+
 #include "Json.h"
 #include <cstdio>
 
@@ -216,7 +226,7 @@ JsonElement::~JsonElement()
 bool& JsonElement::AsBool()
 {
   if (m_type != JsonElement::Type::JSON_BOOL) {
-    Panic("failed to convert json element as a bool");
+    Panic("failed to convert json element %s as a bool", TypeName().c_str());
   }
   return m_value.boolValue;
 }
@@ -224,7 +234,7 @@ bool& JsonElement::AsBool()
 double& JsonElement::AsNumber()
 {
   if (m_type != JsonElement::Type::JSON_NUMBER) {
-    Panic("failed to convert json element as a number");
+    Panic("failed to convert json element %s as a number", TypeName().c_str());
   }
   return m_value.numberValue;
 }
@@ -232,7 +242,7 @@ double& JsonElement::AsNumber()
 void* JsonElement::AsNull()
 {
   if (m_type != JsonElement::Type::JSON_NULL) {
-    Panic("failed to convert json element as a null");
+    Panic("failed to convert json element %s as a null", TypeName().c_str());
   }
   return nullptr;
 }
@@ -240,7 +250,7 @@ void* JsonElement::AsNull()
 std::string& JsonElement::AsString()
 {
   if (m_type != JsonElement::Type::JSON_STRING) {
-    Panic("failed to convert json element as a string");
+    Panic("failed to convert json element %s as a string", TypeName().c_str());
   }
   return *(m_value.stringValue);
 }
@@ -248,7 +258,7 @@ std::string& JsonElement::AsString()
 JsonObject& JsonElement::AsJsonObject()
 {
   if (m_type != JsonElement::Type::JSON_OBJECT) {
-    Panic("failed to convert json element as an object");
+    Panic("failed to convert json element %s as an object", TypeName().c_str());
   }
   return *(m_value.objectValue);
 }
@@ -256,7 +266,7 @@ JsonObject& JsonElement::AsJsonObject()
 JsonArray& JsonElement::AsJsonArray()
 {
   if (m_type != JsonElement::Type::JSON_ARRAY) {
-    Panic("failed to convert json element as an array");
+    Panic("failed to convert json element %s as an array", TypeName().c_str());
   }
   return *(m_value.arrayValue);
 }
@@ -266,7 +276,7 @@ JsonArray& JsonElement::AsJsonArray()
 bool JsonElement::ToBool() const
 {
   if (m_type != JsonElement::Type::JSON_BOOL) {
-    Panic("failed to convert json element as a bool");
+    Panic("failed to convert json element %s as a bool");
   }
   return m_value.boolValue;
 }
@@ -274,7 +284,7 @@ bool JsonElement::ToBool() const
 double JsonElement::ToNumber() const
 {
   if (m_type != JsonElement::Type::JSON_NUMBER) {
-    Panic("failed to convert json element as a number");
+    Panic("failed to convert json element %s as a number");
   }
   return m_value.numberValue;
 }
@@ -282,7 +292,7 @@ double JsonElement::ToNumber() const
 void* JsonElement::ToNull() const
 {
   if (m_type != JsonElement::Type::JSON_NULL) {
-    Panic("failed to convert json element as a null");
+    Panic("failed to convert json element %s as a null");
   }
   return nullptr;
 }
@@ -290,7 +300,7 @@ void* JsonElement::ToNull() const
 std::string JsonElement::ToString() const
 {
   if (m_type != JsonElement::Type::JSON_STRING) {
-    Panic("failed to convert json element as a string");
+    Panic("failed to convert json element %s as a string");
   }
   return *(m_value.stringValue);
 }
@@ -298,7 +308,7 @@ std::string JsonElement::ToString() const
 JsonObject JsonElement::ToJsonObject() const
 {
   if (m_type != JsonElement::Type::JSON_OBJECT) {
-    Panic("failed to convert json element as an object");
+    Panic("failed to convert json element %s as an object");
   }
   return *(m_value.objectValue);
 }
@@ -306,7 +316,7 @@ JsonObject JsonElement::ToJsonObject() const
 JsonArray JsonElement::ToJsonArray() const
 {
   if (m_type != JsonElement::Type::JSON_ARRAY) {
-    Panic("failed to convert json element as an array");
+    Panic("failed to convert json element %s as an array");
   }
   return *(m_value.arrayValue);
 }
@@ -335,7 +345,7 @@ std::string JsonElement::TypeName() const
     case JsonElement::Type::JSON_NULL:
       return "JSON_NULL";
   }
-  Panic("invalid type");
+  Panic("invalid type for TypeName()");
   return "";
 }
 
@@ -371,7 +381,7 @@ std::string JsonElement::Serialize() const
       return JsonArray(*m_value.arrayValue).Serialize();
     }
   }
-  Panic("unknown type to serialize");
+  Panic("unknown type to serialize: %s", TypeName().c_str());
   return "";
 }
 
@@ -404,6 +414,8 @@ std::string JsonArray::Serialize() const
 
 JsonScanner::JsonScanner(const std::string &str): m_str(str), m_pos(0), m_prevPos(0)
 {}
+
+void JsonScanner::Reset() { m_pos = 0; m_prevPos = 0; }
 
 // return a non space token
 JsonScanner::Token JsonScanner::Next()
@@ -450,7 +462,7 @@ JsonScanner::Token JsonScanner::Next()
       m_pos ++;
       return Token::COLON;
   }
-  Panic("Invalid token at position %u", m_pos);
+  Panic("Invalid token at position %lu", m_pos);
   return Token::LITERAL_NULL;
 }
 
@@ -472,7 +484,7 @@ void JsonScanner::ScanNextString()
       // t horizontal tab
       // u (4 hex digits)
       if (m_pos >= m_str.size()) {
-        Panic("missing token, position: %s", m_pos);
+        Panic("missing token, position: %lu", m_pos);
         return;
       } else {
         char escapeChar = m_str[m_pos];
@@ -487,7 +499,7 @@ void JsonScanner::ScanNextString()
     }
   }
   if (m_pos >= m_str.size()) {
-    Panic("missing end of string, position: %u", beginPos);
+    Panic("missing end of string, position: %lu", beginPos);
   }
   m_pos ++; // skip right "
   m_tmpStrValue = m_str.substr(beginPos + 1, m_pos - beginPos - 2);
@@ -496,22 +508,33 @@ void JsonScanner::ScanNextString()
 void JsonScanner::ScanNextNumber()
 {
   size_t beginPos = m_pos;
-  m_pos ++; // skip + or -
+  // example: "-114.51E-4"
+  m_pos ++; // skip + or - or first digit
   while (m_pos < m_str.size() && IsDigit(m_str[m_pos])) {
     m_pos ++;
   }
-  // TODO::114E514
   if (m_pos + 1 < m_str.size() && m_str[m_pos] == '.' && IsDigit(m_str[m_pos + 1])) {
-    m_pos ++;
+    m_pos ++; // skip .
     while(m_pos < m_str.size() && IsDigit(m_str[m_pos])) {
       m_pos ++;
     }
   }
+  if (m_pos + 1 < m_str.size() && (m_str[m_pos] == 'E' || m_str[m_pos] == 'e')) {
+    m_pos ++;
+    if (m_str[m_pos] == '-' || m_str[m_pos] == '+') {
+      m_pos ++;
+    }
+    // parse number
+    while (m_pos < m_str.size() && IsDigit(m_str[m_pos])) {
+      m_pos ++;
+    }
+  }
+
   std::string numberStr = m_str.substr(beginPos, m_pos - beginPos);
   try {
     m_tmpNumberValue = std::atof(numberStr.c_str());
   } catch (std::exception &e) {
-    Panic("invalid number %lf, pos: %u", m_tmpNumberValue, beginPos);
+    Panic("invalid number %lf, pos: %lu", m_tmpNumberValue, beginPos);
   }
 }
 
@@ -519,8 +542,26 @@ double JsonScanner::GetNumberValue() { return m_tmpNumberValue; }
 
 std::string JsonScanner::GetStringValue() { return m_tmpStrValue; }
 
-
-
+std::string JsonScanner::TokenName(Token token)
+{
+  switch (token) {
+    case Token::WHITESPACE: return "WHITESPACE";
+    case Token::NUMBER: return "NUMBER";
+    case Token::STRING: return "STRING";
+    case Token::LITERAL_TRUE: return "LITERAL_TRUE";
+    case Token::LITERAL_FALSE: return "LITERAL_FALSE";
+    case Token::LITERAL_NULL: return "LITERAL_NULL";
+    case Token::COMMA: return "COMMA";
+    case Token::COLON: return "COLON";
+    case Token::ARRAY_BEGIN: return "ARRAY_BEGIN";
+    case Token::ARRAY_END: return "ARRAY_END";
+    case Token::OBJECT_BEGIN: return "OBJECT_BEGIN";
+    case Token::OBJECT_END: return "OBJECT_END";
+    case Token::EOF_TOKEN: return "EOF_TOKEN";
+  }
+  Panic("Unexpected token");
+  return "";
+}
 
 
 
@@ -528,6 +569,26 @@ JsonParser::JsonParser(const std::string str): m_scanner(str)
 {}
 
 JsonElement JsonParser::Parse()
+{
+  m_scanner.Reset();
+  JsonElement ele = ParseNext();
+  if (m_scanner.Next() != JsonScanner::Token::EOF_TOKEN) {
+    Panic("json scanner reached non-eof token, position = %lu", m_scanner.Position());
+  }
+  return ele;
+}
+
+bool JsonParser::IsValid()
+{
+  try {
+    Parse();
+  } catch (const std::exception& e) {
+    return false;
+  }
+  return true;
+}
+
+JsonElement JsonParser::ParseNext()
 {
   JsonScanner::Token token = m_scanner.Next();
   switch (token) {
@@ -553,7 +614,7 @@ JsonElement JsonParser::Parse()
       return JsonElement();
     }
   }
-  Panic("scanner return unexpected token: %u", token);
+  Panic("scanner return unexpected token: %s", JsonScanner::TokenName(token).c_str());
   return JsonElement();
 }
 
@@ -570,16 +631,16 @@ JsonObject JsonParser::ParseJsonObject()
     size_t pos = m_scanner.Position();
     token = m_scanner.Next();
     if (token != JsonScanner::Token::STRING) {
-      Panic("expect a string as key for json object, position: %u", pos);
+      Panic("expect a string as key for json object, position: %lu", pos);
     }
     std::string key = m_scanner.GetStringValue();
 
     pos = m_scanner.Position();
     token = m_scanner.Next();
     if (token != JsonScanner::Token::COLON) {
-      Panic("expect ':' in json object, position: %u", pos);
+      Panic("expect ':' in json object, position: %lu", pos);
     }
-    JsonElement ele = Parse();
+    JsonElement ele = ParseNext();
     object[key] = ele;
 
     pos = m_scanner.Position();
@@ -588,7 +649,7 @@ JsonObject JsonParser::ParseJsonObject()
       break;
     }
     if (token != JsonScanner::Token::COMMA) {
-      Panic("expect ',' in json object, position: %u", pos);
+      Panic("expect ',' in json object, position: %lu", pos);
     }
   }
   return object;
@@ -604,14 +665,14 @@ JsonArray JsonParser::ParseJsonArray()
   m_scanner.RollBack();
 
   while (true) {
-    array.push_back(Parse());
+    array.push_back(ParseNext());
     size_t pos = m_scanner.Position();
     token = m_scanner.Next();
     if (token == JsonScanner::Token::ARRAY_END) {
       break;
     }
     if (token != JsonScanner::Token::COMMA) {
-      Panic("expect ',' in array, pos: %u", pos);
+      Panic("expect ',' in array, pos: %lu", pos);
     }
   }
   return array;

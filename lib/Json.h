@@ -1,3 +1,13 @@
+/*================================================================
+*   Copyright (C) 2022 XUranus All rights reserved.
+*   
+*   File:         Xml.h
+*   Author:       XUranus
+*   Date:         2022-11-21
+*   Description:  
+*
+================================================================*/
+
 #ifndef _XURANUS_JSON_CPP_
 #define _XURANUS_JSON_CPP_
 
@@ -8,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <stdarg.h>
 
 /**
  * https://www.json.org/json-en.html
@@ -27,7 +38,10 @@ class JsonObject;
 class JsonArray;
 
 #define SERIALIZE_SECTION_BEGIN \
-  void __XURANUS__JSON_CPP_SERIALIZE_METHOD__(xuranus::jsoncpp::JsonObject& object, bool toJson) \
+  public: \
+  using __XURANUS_JSON_SERIALIZATION_MAGIC__ = void; \
+  public: \
+  void _XURANUS_JSON_CPP_SERIALIZE_METHOD_(xuranus::jsoncpp::JsonObject& object, bool toJson) \
   { \
 
 #define SERIALIZE_SECTION_END \
@@ -47,6 +61,16 @@ class JsonArray;
   ::sprintf(message, str"\n", ##__VA_ARGS__); \
   throw std::logic_error(message); \
 } while(0); \
+
+// inline void Panic(const char* str, ...)
+// {
+//   char message[100]; 
+//   va_list args;
+//   va_start(args, str);
+//   ::sprintf(message, str, args);
+//   ::va_end(args);
+//   throw std::logic_error(message); 
+// }
 
 class Serializable {
   virtual std::string Serialize() const = 0;
@@ -129,7 +153,7 @@ public:
 
 class JsonScanner {
   public:
-    enum  Token {
+    enum class Token {
       WHITESPACE, // ' ', '\n', '\r', '\t'
       NUMBER,
       STRING,
@@ -147,11 +171,13 @@ class JsonScanner {
 
   public:
     JsonScanner(const std::string &str);
+    void Reset();
     Token Next();
     double GetNumberValue();
     std::string GetStringValue();
     inline void RollBack() { m_pos = m_prevPos; }
     inline size_t Position() { return m_pos; }
+    static std::string TokenName(Token token);
 
   private:  
     void ScanNextString();
@@ -180,7 +206,7 @@ class JsonScanner {
       if (m_str.compare(m_pos, offset, literal) == 0) {
         m_pos += offset;
       } else {
-        Panic("unknown literal token, position = %d, do you mean: %s ?", m_pos, literal.c_str());
+        Panic("unknown literal token at position = %lu, do you mean: %s ?", m_pos, literal.c_str());
       }
     }
   private:
@@ -200,56 +226,53 @@ class JsonParser {
   public:
     JsonParser(const std::string str);
     JsonElement Parse();
+    bool IsValid();
   private:
+    JsonElement ParseNext();
     JsonObject ParseJsonObject();
     JsonArray ParseJsonArray();
 };
 
-
-template<typename T> struct JsonElementDeserializer {
-  void operator () (const JsonElement& ele, T& value) {
-    JsonObject object = ele.ToJsonObject();
-    value.__XURANUS__JSON_CPP_SERIALIZE_METHOD__(object, false);
-    return;
-  }
+template<typename T>
+typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__ CastFromJsonElement(const JsonElement& ele, T& value) {
+  JsonObject object = ele.ToJsonObject();
+  value._XURANUS_JSON_CPP_SERIALIZE_METHOD_(object, false);
+  return;
 };
 
-template<> struct JsonElementDeserializer<std::string> {
-  void operator () (const JsonElement& ele, std::string& value) {
-    value = ele.ToString();
-    return;
-  }
+template<typename T, typename = typename std::enable_if<std::is_same<T, std::string>::value>::type>
+void CastFromJsonElement(const JsonElement& ele, T& value) {
+  value = ele.ToString();
+  return;
+}
+
+template<typename T, typename = typename std::enable_if<std::is_same<T, long>::value>::type>
+void CastFromJsonElement(const JsonElement& ele, long& value) {
+  value = static_cast<long>(ele.ToNumber());
+  return;
+}
+
+
+template<typename T>
+typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__ CastToJsonElement(JsonElement& ele, const T& value) {
+  JsonObject object {};
+  T* valueRef = reinterpret_cast<T*>((void*)&value);
+  valueRef->_XURANUS_JSON_CPP_SERIALIZE_METHOD_(object, true);
+  ele = JsonElement(object);
+  return;
 };
 
-template<> struct JsonElementDeserializer<long> {
-  void operator () (const JsonElement& ele, long& value) {
-    value = static_cast<long>(ele.ToNumber());
-    return;
-  }
-};
+template<typename T, typename = typename std::enable_if<std::is_same<T, long>::value>::type>
+void CastToJsonElement(JsonElement& ele, const long value) {
+  ele = JsonElement(value);
+  return;
+}
 
-
-template<typename T> struct JsonElementSerializer {
-  JsonElement operator () (const T& value) {
-    JsonObject object {};
-    T* valueRef = reinterpret_cast<T*>((void*)&value);
-    valueRef->__XURANUS__JSON_CPP_SERIALIZE_METHOD__(object, true);
-    return JsonElement(object);
-  }
-};
-
-template<> struct JsonElementSerializer<std::string> {
-  JsonElement operator () (const std::string& value) {
-    return JsonElement(value);
-  }
-};
-
-template<> struct JsonElementSerializer<long> {
-  JsonElement operator () (const long& value) {
-    return JsonElement(value);
-  }
-};
-
+template<typename T, typename = typename std::enable_if<std::is_same<T, std::string>::value>::type>
+void CastToJsonElement(JsonElement& ele, const std::string& value) {
+  ele = JsonElement(value);
+  return;
+}
 
 namespace util {
   std::string EscapeString(const std::string& str);
@@ -259,7 +282,7 @@ namespace util {
   std::string Serialize(T& value)
   {
     JsonObject object {};
-    value.__XURANUS__JSON_CPP_SERIALIZE_METHOD__(object, true); 
+    value._XURANUS_JSON_CPP_SERIALIZE_METHOD_(object, true); 
     return object.Serialize();
   }
 
@@ -269,7 +292,7 @@ namespace util {
     JsonParser parser(jsonStr);
     JsonElement ele = parser.Parse();
     JsonObject object = ele.AsJsonObject();
-    value.__XURANUS__JSON_CPP_SERIALIZE_METHOD__(object, false);
+    value._XURANUS_JSON_CPP_SERIALIZE_METHOD_(object, false);
   }
 
 
@@ -277,16 +300,16 @@ namespace util {
   template<typename T>
   void SerializeTo(JsonObject &object, const std::string& key, const T& field)
   {
-    JsonElementSerializer<T> serialize;
-    object[key] = serialize(field);
+    JsonElement ele {};
+    CastToJsonElement<T>(ele, field);
+    object[key] = ele;
   }
 
   template<typename T>
   void DeserializeFrom(const JsonObject& object, const std::string& key, T& field)
   {
     JsonElement ele = object.find(key)->second;
-    JsonElementDeserializer<T> cast {};
-    cast(ele, field);
+    CastFromJsonElement<T>(ele, field);
   }
 }
 
