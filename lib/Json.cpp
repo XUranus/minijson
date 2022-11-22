@@ -276,7 +276,7 @@ JsonArray& JsonElement::AsJsonArray()
 bool JsonElement::ToBool() const
 {
   if (m_type != JsonElement::Type::JSON_BOOL) {
-    Panic("failed to convert json element %s as a bool");
+    Panic("failed to convert json element %s as a bool", TypeName().c_str());
   }
   return m_value.boolValue;
 }
@@ -284,7 +284,7 @@ bool JsonElement::ToBool() const
 double JsonElement::ToNumber() const
 {
   if (m_type != JsonElement::Type::JSON_NUMBER) {
-    Panic("failed to convert json element %s as a number");
+    Panic("failed to convert json element %s as a number", TypeName().c_str());
   }
   return m_value.numberValue;
 }
@@ -292,7 +292,7 @@ double JsonElement::ToNumber() const
 void* JsonElement::ToNull() const
 {
   if (m_type != JsonElement::Type::JSON_NULL) {
-    Panic("failed to convert json element %s as a null");
+    Panic("failed to convert json element %s as a null", TypeName().c_str());
   }
   return nullptr;
 }
@@ -300,7 +300,7 @@ void* JsonElement::ToNull() const
 std::string JsonElement::ToString() const
 {
   if (m_type != JsonElement::Type::JSON_STRING) {
-    Panic("failed to convert json element %s as a string");
+    Panic("failed to convert json element %s as a string", TypeName().c_str());
   }
   return *(m_value.stringValue);
 }
@@ -308,7 +308,7 @@ std::string JsonElement::ToString() const
 JsonObject JsonElement::ToJsonObject() const
 {
   if (m_type != JsonElement::Type::JSON_OBJECT) {
-    Panic("failed to convert json element %s as an object");
+    Panic("failed to convert json element %s as an object", TypeName().c_str());
   }
   return *(m_value.objectValue);
 }
@@ -316,7 +316,7 @@ JsonObject JsonElement::ToJsonObject() const
 JsonArray JsonElement::ToJsonArray() const
 {
   if (m_type != JsonElement::Type::JSON_ARRAY) {
-    Panic("failed to convert json element %s as an array");
+    Panic("failed to convert json element %s as an array", TypeName().c_str());
   }
   return *(m_value.arrayValue);
 }
@@ -359,17 +359,7 @@ std::string JsonElement::Serialize() const
       return m_value.boolValue ? "true" : "false";
     }
     case JsonElement::Type::JSON_NUMBER: {
-      // TODO:: extract
-      std::string res = std::to_string(m_value.numberValue);
-      if (res.find('.') != std::string::npos) {
-        while(res.back() == '0') {
-          res.pop_back();
-        }
-      }
-      if (res.back() == '.') {
-        res.pop_back();
-      }
-      return res;
+      return DoubleToString(m_value.numberValue);
     }
     case JsonElement::Type::JSON_STRING: {
       return std::string("\"") + EscapeString(*m_value.stringValue) + "\"";
@@ -721,6 +711,20 @@ std::string util::EscapeString(const std::string& str)
         break;
       }
     }
+  }
+  return res;
+}
+
+std::string util::DoubleToString(double value)
+{
+  std::string res = std::to_string(value);
+  if (res.find('.') != std::string::npos) {
+    while(res.back() == '0') {
+      res.pop_back();
+    }
+  }
+  if (res.back() == '.') {
+    res.pop_back();
   }
   return res;
 }

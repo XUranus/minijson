@@ -5,11 +5,15 @@ using namespace xuranus::jsoncpp;
 
 struct Certificate {
   std::string name;
-  long degree;
-
+  int degree;
+  float score;
+  bool expired;
+  
   SERIALIZE_SECTION_BEGIN
   SERIALIZE_FIELD(name, name);
   SERIALIZE_FIELD(degree, degree);
+  SERIALIZE_FIELD(score, score);
+  SERIALIZE_FIELD(expired, expired);
   SERIALIZE_SECTION_END
 };
 
@@ -36,7 +40,7 @@ int main2()
 
   Employee employee2;
   //util::Deserialize(util::Serialize(employee), employee2);
-  util::Deserialize(R"({"certificate":{"degree":2,"name":"Java"},"name":"xuranus"})", employee2);
+  util::Deserialize(R"({"certificate":{"degree":2,"name":"Java","score":"114.514","expired":true},"name":"xuranus"})", employee2);
   std::cout << employee2.name << std::endl;
   std::cout << employee2.certificate.name << std::endl;
   std::cout << employee2.certificate.degree << std::endl;

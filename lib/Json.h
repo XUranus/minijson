@@ -234,27 +234,33 @@ class JsonParser {
 };
 
 template<typename T>
-typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__ CastFromJsonElement(const JsonElement& ele, T& value) {
+auto CastFromJsonElement(const JsonElement& ele, T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__()) {
   JsonObject object = ele.ToJsonObject();
   value._XURANUS_JSON_CPP_SERIALIZE_METHOD_(object, false);
   return;
 };
 
-template<typename T, typename = typename std::enable_if<std::is_same<T, std::string>::value>::type>
+template<typename T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
 void CastFromJsonElement(const JsonElement& ele, T& value) {
   value = ele.ToString();
   return;
 }
 
-template<typename T, typename = typename std::enable_if<std::is_same<T, long>::value>::type>
-void CastFromJsonElement(const JsonElement& ele, long& value) {
-  value = static_cast<long>(ele.ToNumber());
+template<typename T, typename std::enable_if<(std::is_integral<T>::value || std::is_floating_point<T>::value) 
+  && !std::is_same<T, bool>::value>::type* = nullptr>
+void CastFromJsonElement(const JsonElement& ele, T& value) {
+  value = static_cast<T>(ele.ToNumber());
   return;
 }
 
+template<typename T, typename std::enable_if<std::is_same<T, bool>::value>::type* = nullptr>
+void CastFromJsonElement(const JsonElement& ele, T& value) {
+  value = ele.ToBool();
+  return;
+}
 
 template<typename T>
-typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__ CastToJsonElement(JsonElement& ele, const T& value) {
+auto CastToJsonElement(JsonElement& ele, const T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__()) {
   JsonObject object {};
   T* valueRef = reinterpret_cast<T*>((void*)&value);
   valueRef->_XURANUS_JSON_CPP_SERIALIZE_METHOD_(object, true);
@@ -262,21 +268,33 @@ typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__ CastToJsonElement(JsonElement& 
   return;
 };
 
-template<typename T, typename = typename std::enable_if<std::is_same<T, long>::value>::type>
-void CastToJsonElement(JsonElement& ele, const long value) {
+template<typename T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
+void CastToJsonElement(JsonElement& ele, const T& value) {
   ele = JsonElement(value);
   return;
 }
 
-template<typename T, typename = typename std::enable_if<std::is_same<T, std::string>::value>::type>
-void CastToJsonElement(JsonElement& ele, const std::string& value) {
+template<typename T, typename std::enable_if<std::is_same<T, bool>::value>::type* = nullptr>
+void CastToJsonElement(JsonElement& ele, const T& value) {
   ele = JsonElement(value);
+  return;
+}
+
+template<typename T, typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value>::type* = nullptr>
+void CastToJsonElement(JsonElement& ele, const T& value) {
+  ele = JsonElement(static_cast<long>(value));
+  return;
+}
+
+template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+void CastToJsonElement(JsonElement& ele, const T& value) {
+  ele = JsonElement(static_cast<double>(value));
   return;
 }
 
 namespace util {
   std::string EscapeString(const std::string& str);
-  std::string DoubleToString(double value);// TODO
+  std::string DoubleToString(double value);
 
   template<typename T>
   std::string Serialize(T& value)
