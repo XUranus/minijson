@@ -260,6 +260,20 @@ void CastFromJsonElement(const JsonElement& ele, T& value) {
 }
 
 template<typename T>
+void CastFromJsonElement(const JsonElement& ele, std::vector<T, std::allocator<T>>& value) {
+  JsonArray array = ele.ToJsonArray();
+  value.clear();
+  for (const JsonElement& eleItem: array) {
+    T t;
+    CastFromJsonElement<T>(eleItem, t);
+    value.push_back(t);
+  }
+  return;
+}
+
+
+
+template<typename T>
 auto CastToJsonElement(JsonElement& ele, const T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__()) {
   JsonObject object {};
   T* valueRef = reinterpret_cast<T*>((void*)&value);
@@ -289,6 +303,18 @@ void CastToJsonElement(JsonElement& ele, const T& value) {
 template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
 void CastToJsonElement(JsonElement& ele, const T& value) {
   ele = JsonElement(static_cast<double>(value));
+  return;
+}
+
+template<typename T>
+void CastToJsonElement(JsonElement& ele, const std::vector<T, std::allocator<T>>& value) {
+  JsonArray array;
+  for (const T& item: value) {
+    JsonElement itemElement;
+    CastToJsonElement<T>(itemElement, item);
+    array.push_back(itemElement);
+  }
+  ele = JsonElement(array);
   return;
 }
 
