@@ -393,10 +393,14 @@ std::string JsonObject::Serialize() const
 std::string JsonArray::Serialize() const
 {
   std::string res = "[";
+  bool moreThanOne = false;
   for (const auto& v: *this) {
+    moreThanOne = true;
     res += v.Serialize() + ",";
   }
-  res.pop_back();
+  if (moreThanOne) {
+    res.pop_back();
+  }
   res += "]";
   return res;
 }

@@ -22,7 +22,7 @@ struct Employee {
   std::string name;
   Certificate certificate;
   std::vector<int> seq;
-  std::map<std::string, std::string> mp;
+  std::map<std::string, int> mp;
 
   SERIALIZE_SECTION_BEGIN
   SERIALIZE_FIELD(name, name);
@@ -66,13 +66,14 @@ TEST(SerializationTest, SerializeStruct) {
 
 TEST(SerializationTest, DeserializeToStruct) {
   Employee employee2;
-  util::Deserialize(R"({"certificate":{"degree":2,"name":"Java","score":114.514,"expired":true},"seq":[1,2,3], "name":"xuranus"})", employee2);
+  util::Deserialize(R"({"certificate":{"degree":2,"name":"Java","score":114.514,"expired":true},"seq":[1,2,3], "name":"xuranus","mp":{"x":114514}})", employee2);
   std::cout << employee2.name << std::endl;
   std::cout << employee2.seq.size() << " " << employee2.seq[0] << " " << employee2.seq[1] << " " << employee2.seq[2] << std::endl;
   std::cout << employee2.certificate.name << std::endl;
   std::cout << employee2.certificate.degree << std::endl;
   std::cout << employee2.certificate.score << std::endl;
   std::cout << employee2.certificate.expired << std::endl;
+  std::cout << employee2.mp["x"] << std::endl;
 }
 
 // TEST(SerializationTest, XX) {
