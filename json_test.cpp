@@ -9,24 +9,26 @@ struct Certificate {
   int degree;
   float score;
   bool expired;
-  std::vector<int> seq;
   
   SERIALIZE_SECTION_BEGIN
   SERIALIZE_FIELD(name, name);
   SERIALIZE_FIELD(degree, degree);
   SERIALIZE_FIELD(score, score);
   SERIALIZE_FIELD(expired, expired);
-  SERIALIZE_FIELD(seq, seq);
   SERIALIZE_SECTION_END
 };
 
 struct Employee {
   std::string name;
   Certificate certificate;
+  std::vector<int> seq;
+  std::map<std::string, std::string> mp;
 
   SERIALIZE_SECTION_BEGIN
   SERIALIZE_FIELD(name, name);
   SERIALIZE_FIELD(certificate, certificate);
+  SERIALIZE_FIELD(seq, seq);
+  SERIALIZE_FIELD(mp, mp);
   SERIALIZE_SECTION_END
 };
 
@@ -64,8 +66,9 @@ TEST(SerializationTest, SerializeStruct) {
 
 TEST(SerializationTest, DeserializeToStruct) {
   Employee employee2;
-  util::Deserialize(R"({"certificate":{"degree":2,"name":"Java","score":114.514,"expired":true, "seq":[]},"name":"xuranus"})", employee2);
+  util::Deserialize(R"({"certificate":{"degree":2,"name":"Java","score":114.514,"expired":true},"seq":[1,2,3], "name":"xuranus"})", employee2);
   std::cout << employee2.name << std::endl;
+  std::cout << employee2.seq.size() << " " << employee2.seq[0] << " " << employee2.seq[1] << " " << employee2.seq[2] << std::endl;
   std::cout << employee2.certificate.name << std::endl;
   std::cout << employee2.certificate.degree << std::endl;
   std::cout << employee2.certificate.score << std::endl;
