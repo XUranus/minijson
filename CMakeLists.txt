@@ -1,29 +1,23 @@
 cmake_minimum_required(VERSION 3.14)
-project(jsoncpp)
 
-# GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 14)
+set(Project jsoncpp)
+project(${Project} C CXX)
 
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_POSITION_INDEPENDENT_CODE on)
 
 enable_testing()
 
-add_executable(
-  json_test
-  json_test.cpp
-  lib/Json.cpp
-)
-target_link_libraries(
-  json_test
-  GTest::gtest_main
+SET(Headers
+  Json.h
 )
 
-include(GoogleTest)
-gtest_discover_tests(json_test)
+SET(Sources
+  Json.cpp
+)
+
+add_library(${Project} STATIC ${Sources} ${Headers})
+
+add_subdirectory(googletest)
+add_subdirectory(test)

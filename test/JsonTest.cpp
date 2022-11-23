@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <iostream>
-#include "lib/Json.h"
+#include "../Json.h"
 
 using namespace xuranus::jsoncpp;
 
@@ -66,7 +66,20 @@ TEST(SerializationTest, SerializeStruct) {
 
 TEST(SerializationTest, DeserializeToStruct) {
   Employee employee2;
-  util::Deserialize(R"({"certificate":{"degree":2,"name":"Java","score":114.514,"expired":true},"seq":[1,2,3], "name":"xuranus","mp":{"x":114514}})", employee2);
+  util::Deserialize(R"(
+    {
+      "certificate":{
+        "degree":2,
+        "name":"Java",
+        "score":114.514,
+        "expired":true
+      },
+      "seq":[1,2,3],
+      "name":"xuranus",
+      "mp":{
+        "x":114514
+        }
+      })", employee2);
   std::cout << employee2.name << std::endl;
   std::cout << employee2.seq.size() << " " << employee2.seq[0] << " " << employee2.seq[1] << " " << employee2.seq[2] << std::endl;
   std::cout << employee2.certificate.name << std::endl;
