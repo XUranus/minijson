@@ -2,7 +2,7 @@
 #include <iostream>
 #include "../Json.h"
 
-using namespace xuranus::jsoncpp;
+using namespace xuranus::minijson;
 
 struct Certificate {
   std::string name;

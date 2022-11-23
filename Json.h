@@ -33,7 +33,7 @@
  *        
  **/
 namespace xuranus {
-namespace jsoncpp {
+namespace minijson {
 
 class JsonElement;
 class JsonObject;
@@ -43,7 +43,7 @@ class JsonArray;
 public:                                                                                         \
   using __XURANUS_JSON_SERIALIZATION_MAGIC__ = void;                                            \
 public:                                                                                         \
-  void _XURANUS_JSON_CPP_SERIALIZE_METHOD_(xuranus::jsoncpp::JsonObject& object, bool toJson)   \
+  void _XURANUS_JSON_CPP_SERIALIZE_METHOD_(xuranus::minijson::JsonObject& object, bool toJson)   \
   {                                                                                             \
 
 #define SERIALIZE_SECTION_END                                                                   \
@@ -52,27 +52,22 @@ public:                                                                         
 #define SERIALIZE_FIELD(KEY_NAME, ATTR_NAME)                                                    \
   do {                                                                                          \
     if (toJson) {                                                                               \
-      xuranus::jsoncpp::util::SerializeTo(object, #KEY_NAME, ATTR_NAME);                        \
+      xuranus::minijson::util::SerializeTo(object, #KEY_NAME, ATTR_NAME);                        \
     } else {                                                                                    \
-      xuranus::jsoncpp::util::DeserializeFrom(object, #KEY_NAME, ATTR_NAME);                    \
+      xuranus::minijson::util::DeserializeFrom(object, #KEY_NAME, ATTR_NAME);                    \
     }                                                                                           \
   } while (0)                                                                                   \
 
-#define Panic(str, ...) do {                                                                    \
-  char message[100];                                                                            \
-  ::sprintf(message, str"\n", ##__VA_ARGS__);                                                   \
-  throw std::logic_error(message);                                                              \
-} while(0);                                                                                     \
 
-// inline void Panic(const char* str, ...)
-// {
-//   char message[100]; 
-//   va_list args;
-//   va_start(args, str);
-//   ::sprintf(message, str, args);
-//   ::va_end(args);
-//   throw std::logic_error(message); 
-// }
+inline void Panic(const char* str, ...)
+{
+  char message[100]; 
+  va_list args;
+  va_start(args, str);
+  ::vsprintf(message, str, args);
+  ::va_end(args);
+  throw std::logic_error(message); 
+}
 
 class Serializable {
   virtual std::string Serialize() const = 0;

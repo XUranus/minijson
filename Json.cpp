@@ -11,8 +11,8 @@
 #include "Json.h"
 #include <cstdio>
 
-using namespace xuranus::jsoncpp;
-using namespace xuranus::jsoncpp::util;
+using namespace xuranus::minijson;
+using namespace xuranus::minijson::util;
 
 JsonElement::JsonElement()
 {
