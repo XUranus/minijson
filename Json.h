@@ -64,8 +64,8 @@ inline void Panic(const char* str, ...)
   char message[100]; 
   va_list args;
   va_start(args, str);
-  ::vsprintf(message, str, args);
-  ::va_end(args);
+  vsprintf(message, str, args);
+  va_end(args);
   throw std::logic_error(message); 
 }
 

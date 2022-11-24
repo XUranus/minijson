@@ -21,7 +21,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(${Project} ${Sources})
 
 target_link_libraries(${Project} PUBLIC 
-    minijson
+    minijson_static
     GTest::gtest_main
 )
 
