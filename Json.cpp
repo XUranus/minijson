@@ -1,10 +1,11 @@
 /*================================================================
 *   Copyright (C) 2022 XUranus All rights reserved.
 *   
-*   File:         Xml.h
+*   File:         Json.cpp
 *   Author:       XUranus
 *   Date:         2022-11-21
-*   Description:  
+*   Description:  a tiny C++ Json library
+*                 https://github.com/XUranus/minicpp
 *
 ================================================================*/
 
@@ -239,7 +240,7 @@ double& JsonElement::AsNumber()
   return m_value.numberValue;
 }
 
-void* JsonElement::AsNull()
+void* JsonElement::AsNull() const
 {
   if (m_type != JsonElement::Type::JSON_NULL) {
     Panic("failed to convert json element %s as a null", TypeName().c_str());
@@ -496,7 +497,8 @@ void JsonScanner::ScanNextString()
     Panic("missing end of string, position: %lu", beginPos);
   }
   m_pos ++; // skip right "
-  m_tmpStrValue = m_str.substr(beginPos + 1, m_pos - beginPos - 2);
+  std::string rawStr = m_str.substr(beginPos + 1, m_pos - beginPos - 2);
+  m_tmpStrValue = util::UnescapeString(rawStr);
 }
 
 void JsonScanner::ScanNextNumber()
@@ -685,6 +687,7 @@ std::string util::EscapeString(const std::string& str)
       case '/':
         res.push_back('\\');
         res.push_back(ch);
+        break;
       case '\f': {
         res.push_back('\\');
         res.push_back('f');
@@ -714,6 +717,52 @@ std::string util::EscapeString(const std::string& str)
         res.push_back(ch);
         break;
       }
+    }
+  }
+  return res;
+}
+
+std::string util::UnescapeString(const std::string& str)
+{
+  std::string res;
+  for (size_t i = 0; i < str.size(); ++i) {
+    char curChar = str[i];
+    if (curChar == '\\' && i + 1 < str.size()) {
+      char escapeChar = str[++i];
+      switch (escapeChar) {
+        case '"':
+          res.push_back('"');
+          break;
+        case '\\':
+          res.push_back('\\');
+          break;
+        case '/':
+          res.push_back('/');
+          break;
+        case 'f': {
+          res.push_back('\f');
+          break;
+        }
+        case 'b': {
+          res.push_back('\b');
+          break;
+        }
+        case 'r': {
+          res.push_back('\r');
+          break;
+        }
+        case 'n': {
+          res.push_back('\n');
+          break;
+        }
+        case 't': {
+          res.push_back('\t');
+          break;
+        }
+        Panic("invalid escaped char \\%c", escapeChar);
+      }
+    } else {
+      res.push_back(curChar);
     }
   }
   return res;

@@ -1,10 +1,11 @@
 /*================================================================
 *   Copyright (C) 2022 XUranus All rights reserved.
 *   
-*   File:         Xml.h
+*   File:         Json.h
 *   Author:       XUranus
 *   Date:         2022-11-21
-*   Description:  
+*   Description:  a tiny C++ Json library
+*                 https://github.com/XUranus/minicpp
 *
 ================================================================*/
 
@@ -109,7 +110,7 @@ class JsonElement: public Serializable {
 
     bool& AsBool();
     double& AsNumber();
-    void* AsNull();
+    void* AsNull() const;
     std::string& AsString();
     JsonObject& AsJsonObject();
     JsonArray& AsJsonArray();
@@ -213,6 +214,7 @@ class JsonScanner {
 
     std::string m_tmpStrValue {};
     double m_tmpNumberValue {0};
+    std::map<char, char> m_escapeMap {};
 };
 
 
@@ -360,6 +362,7 @@ void CastToJsonElement(JsonElement& ele, const T& value) {
 
 namespace util {
   std::string EscapeString(const std::string& str);
+  std::string UnescapeString(const std::string& str);
   std::string DoubleToString(double value);
 
   template<typename T>

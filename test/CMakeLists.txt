@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.14)
 SET(Project minijson_test)
 project(${Project} C CXX)
 
+SET(Headers
+  StructSample.h
+)
+
 SET(Sources
   MiniJsonTest.cpp
 )
@@ -18,7 +22,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(${Project} ${Sources})
+add_executable(${Project} ${Sources} ${Headers})
 
 target_link_libraries(${Project} PUBLIC 
     minijson_static

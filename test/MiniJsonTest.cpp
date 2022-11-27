@@ -1,103 +1,178 @@
+/*================================================================
+*   Copyright (C) 2022 XUranus All rights reserved.
+*   
+*   File:         MiniJsonTest.cpp
+*   Author:       XUranus
+*   Date:         2022-11-21
+*   Description:  a tiny C++ Json library
+*                 https://github.com/XUranus/minicpp
+*
+================================================================*/
+
 #include <gtest/gtest.h>
 #include <iostream>
+#include "StructSample.h"
 #include "../Json.h"
 
 using namespace xuranus::minijson;
 
-struct Certificate {
-  std::string name;
-  int degree;
-  float score;
-  bool expired;
-  
-  SERIALIZE_SECTION_BEGIN
-  SERIALIZE_FIELD(name, name);
-  SERIALIZE_FIELD(degree, degree);
-  SERIALIZE_FIELD(score, score);
-  SERIALIZE_FIELD(expired, expired);
-  SERIALIZE_SECTION_END
-};
+TEST(StringSerializationTest, EscapeStringTest) {
+  std::string str = "\thello\n\\\rworld\t";
+  std::string escapedStr = R"(\thello\n\\\rworld\t)";
+  EXPECT_EQ(util::EscapeString(str), escapedStr);
+}
 
-struct Employee {
-  std::string name;
-  Certificate certificate;
-  std::vector<int> seq;
-  std::map<std::string, int> mp;
-
-  SERIALIZE_SECTION_BEGIN
-  SERIALIZE_FIELD(name, name);
-  SERIALIZE_FIELD(certificate, certificate);
-  SERIALIZE_FIELD(seq, seq);
-  SERIALIZE_FIELD(mp, mp);
-  SERIALIZE_SECTION_END
-};
+TEST(StringSerializationTest, UnescapeStringTest) {
+  std::string escapedStr = R"(\thello\n\\\rworld\t)";
+  std::string unescapedStr = "\thello\n\\\rworld\t";
+  EXPECT_EQ(util::UnescapeString(escapedStr), unescapedStr);
+}
 
 TEST(SerializationTest, BasicString) {
-  std::string str = R"("this is a basic string")";
-  EXPECT_EQ(JsonParser(str).Parse().Serialize(), str);
+  std::string jsonStr = R"("this is a basic string")";
+  std::string str = "this is a basic string";
+  JsonElement element = JsonParser(jsonStr).Parse();
+  EXPECT_TRUE(element.IsString());
+  EXPECT_EQ(element.ToString(), str);
+  EXPECT_EQ(element.Serialize(), jsonStr);
+  // test string content modification
+  EXPECT_EQ(element.AsString(), str);
+  std::string newStr = "this is a new string"; // TODO:: add operator = overload
+  element.AsString() = newStr;
+  EXPECT_EQ(element.ToString(), newStr);
 }
 
-TEST(SerializationTest, BasicBoolean) {
-  std::string str = "\n  true \t\r";
-  EXPECT_EQ(JsonParser(str).Parse().Serialize(), "true");
-
-  str = "\n\t  false \t\r";
-  EXPECT_EQ(JsonParser(str).Parse().Serialize(), "false");
+TEST(SerializationTest, EscapedString) {
+  std::string jsonStr = R"("this is \t a string \n with escaped \rchar")";
+  std::string str = "this is \t a string \n with escaped \rchar";
+  JsonElement element = JsonParser(jsonStr).Parse();
+  EXPECT_TRUE(element.IsString());
+  EXPECT_EQ(element.ToString(), str);
+  EXPECT_EQ(element.Serialize(), jsonStr);
 }
 
-TEST(SerializationTest, BasicNumber) {
-  std::string str = " 114514 ";
-  EXPECT_EQ(JsonParser(str).Parse().Serialize(), "114514");
-
-  str = "1919.810 ";
-  EXPECT_EQ(JsonParser(str).Parse().Serialize(), "1919.81");
+TEST(SerializationTest, NullType) {
+  std::string str = "null";
+  JsonElement element = JsonParser(str).Parse();
+  EXPECT_EQ(element.Serialize(), "null");
+  EXPECT_TRUE(element.IsNull());
+  EXPECT_EQ(element.AsNull(), nullptr);
+  EXPECT_EQ(element.ToNull(), nullptr);
 }
 
-TEST(SerializationTest, BasicNumberFloat) {
-  std::string str = "114.51E4";
-  EXPECT_EQ(JsonParser(str).Parse().Serialize(), "1145100");
+TEST(SerializationTest, BooleanTrue) {
+  std::string str = "true";
+  JsonElement element = JsonParser(str).Parse();
+  EXPECT_EQ(element.Serialize(), "true");
+  EXPECT_TRUE(element.IsBool());
+  EXPECT_TRUE(element.AsBool());
+  EXPECT_TRUE(element.ToBool());
 }
 
-TEST(SerializationTest, SerializeStruct) {
-  Employee employee {"xuranus", {"Java", 2}};
-  std::cout << util::Serialize(employee) << std::endl;
+TEST(SerializationTest, BooleanFalse) {
+  std::string str = "false";
+  JsonElement element = JsonParser(str).Parse();
+  EXPECT_EQ(element.Serialize(), "false");
+  EXPECT_TRUE(element.IsBool());
+  EXPECT_FALSE(element.AsBool());
+  EXPECT_FALSE(element.ToBool());
 }
 
+TEST(SerializationTest, NumberInteger) {
+  std::string str = "1919810";
+  JsonElement element = JsonParser(str).Parse();
+  EXPECT_EQ(element.Serialize(), "1919810");
+  EXPECT_TRUE(element.IsNumber());
+  EXPECT_EQ(element.AsNumber(), 1919810);
+  EXPECT_EQ(element.ToNumber(), 1919810);
+}
 
-TEST(SerializationTest, DeserializeToStruct) {
-  Employee employee2;
-  util::Deserialize(R"(
+TEST(SerializationTest, NumberBasicFloat) {
+  std::string str = "114.51400";
+  JsonElement element = JsonParser(str).Parse();
+  EXPECT_EQ(element.Serialize(), "114.514");
+  EXPECT_TRUE(element.IsNumber());
+  EXPECT_EQ(element.AsNumber(), 114.514);
+  EXPECT_EQ(element.ToNumber(), 114.514);
+}
+
+TEST(SerializationTest, NumberFloatScientificNotation) {
+  std::string str = "-114.51E+4";
+  JsonElement element = JsonParser(str).Parse();
+  EXPECT_EQ(element.Serialize(), "-1145100");
+  EXPECT_TRUE(element.IsNumber());
+  EXPECT_EQ(element.AsNumber(), -1145100);
+  EXPECT_EQ(element.ToNumber(), -1145100);
+}
+
+TEST(SerializationTest, JsonParserBasicTest) {
+  std::string str = R"(
     {
-      "certificate":{
-        "degree":2,
-        "name":"Java",
-        "score":114.514,
-        "expired":true
-      },
-      "seq":[1,2,3],
-      "name":"xuranus",
-      "mp":{
-        "x":114514
-        }
-      })", employee2);
-  std::cout << employee2.name << std::endl;
-  std::cout << employee2.seq.size() << " " << employee2.seq[0] << " " << employee2.seq[1] << " " << employee2.seq[2] << std::endl;
-  std::cout << employee2.certificate.name << std::endl;
-  std::cout << employee2.certificate.degree << std::endl;
-  std::cout << employee2.certificate.score << std::endl;
-  std::cout << employee2.certificate.expired << std::endl;
-  std::cout << employee2.mp["x"] << std::endl;
+      "name" : "xuranus",
+      "age" : 300,
+      "skills" : ["C++", "Java", "Python"]
+    }
+  )";
+  JsonElement element = JsonParser(str).Parse();
+  JsonObject object = element.AsJsonObject();
+  EXPECT_EQ(object["name"].AsString(), "xuranus");
+  EXPECT_EQ(object["age"].AsNumber(), 300);
+  EXPECT_EQ(object["skills"].AsJsonArray()[0].AsString(), "C++");
+  EXPECT_EQ(object["skills"].AsJsonArray()[1].AsString(), "Java");
+  EXPECT_EQ(object["skills"].AsJsonArray()[2].AsString(), "Python");
 }
 
-// TEST(SerializationTest, XX) {
-//   std::string str = "";
-//   EXPECT_EQ(JsonParser(str).Parse().Serialize(), "114514");
-// }
+TEST(SerializationTest, BasicStructSerialization) {
+  Book book1 {};
+  book1.m_name = "C++ Primer";
+  book1.m_id = 114514;
+  book1.m_price = 114.5;
+  book1.m_soldOut = true;
+  book1.m_tags = {"C++", "Programming", "Language"};
 
+  Book book2 {};
+  std::string jsonStr = util::Serialize(book1);
+  util::Deserialize(jsonStr, book2);
+  EXPECT_EQ(book1.m_name, book2.m_name);
+  EXPECT_EQ(book1.m_id, book2.m_id);
+  EXPECT_EQ(book1.m_price, book2.m_price);
+  EXPECT_EQ(book1.m_soldOut, book2.m_soldOut);
+  EXPECT_EQ(book1.m_tags, book2.m_tags);
+}
 
+TEST(SerializationTest, NestedStructSerialization) {
+  Book book1 {};
+  book1.m_name = "C++ Primer";
+  book1.m_id = 114514;
+  book1.m_price = 114.5;
+  book1.m_soldOut = true;
+  book1.m_tags = {"C++", "Programming", "Language"};
 
-// TEST(StringSerializationTest, StringWithEscapeChar) {
-//   std::string str = R"("hello\n\r\world\t")";
-//   EXPECT_EQ(JsonParser(str).Parse().Serialize(), str);
-// }
+  Book book2 {};
+  book2.m_name = "Essential C++";
+  book2.m_id = 1919810;
+  book2.m_price = 19.19;
+  book2.m_soldOut = false;
+  book2.m_tags = {"Programming", "Computer Science"};
+
+  Author author1 {};
+  author1.m_name = "Stanley B. LippmanBarbara E. Moo JoséeLaJoie";
+  author1.m_books = {book1, book2};
+
+  Author author2 {};
+  std::string jsonStr = util::Serialize(author1);
+  util::Deserialize(jsonStr, author2);
+
+  EXPECT_EQ(author2.m_name, author1.m_name);
+  EXPECT_EQ(author2.m_books, author1.m_books);
+
+  JsonElement ele = JsonParser(jsonStr).Parse();
+  EXPECT_TRUE(ele.IsJsonObject());
+  JsonObject authorObject = ele.AsJsonObject();
+  EXPECT_TRUE(authorObject["name"].IsString());
+  EXPECT_TRUE(authorObject["books"].IsJsonArray());
+  JsonArray booksArray = authorObject["books"].AsJsonArray();
+  EXPECT_EQ(booksArray[0].AsJsonObject()["name"].AsString(), "C++ Primer"); // TODO:: complete it
+}
+
 
