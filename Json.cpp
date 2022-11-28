@@ -62,10 +62,15 @@ JsonElement::JsonElement(double num): m_type(JsonElement::Type::JSON_NUMBER)
 
 JsonElement::JsonElement(long num): m_type(JsonElement::Type::JSON_NUMBER)
 {
-  m_value.numberValue = (double)num;
+  m_value.numberValue = static_cast<double>(num);
 }
 
 JsonElement::JsonElement(const std::string &str): m_type(JsonElement::Type::JSON_STRING)
+{
+  m_value.stringValue = new std::string(str);
+}
+
+JsonElement::JsonElement(char const *str): m_type(JsonElement::Type::JSON_STRING)
 {
   m_value.stringValue = new std::string(str);
 }

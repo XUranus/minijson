@@ -122,6 +122,18 @@ TEST(SerializationTest, JsonParserBasicTest) {
   EXPECT_EQ(object["skills"].AsJsonArray()[2].AsString(), "Python");
 }
 
+TEST(SerializationTest, JsonElementSerialization) {
+  EXPECT_EQ(JsonElement("hello world").Serialize(), R"("hello world")");
+  EXPECT_EQ(JsonElement(true).Serialize(), "true");
+  EXPECT_EQ(JsonElement(114.514).Serialize(), "114.514");
+  EXPECT_EQ(JsonElement().Serialize(), "null");
+
+  JsonObject object {};
+  object["name"] = JsonElement("xuranus");
+  object["age"] = JsonElement(300.0); // TODO:: solve literal ambigous issue
+  EXPECT_EQ(object.Serialize(), R"({"age":300,"name":"xuranus"})");
+}
+
 TEST(SerializationTest, BasicStructSerialization) {
   Book book1 {};
   book1.m_name = "C++ Primer";

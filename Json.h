@@ -95,16 +95,17 @@ class JsonElement: public Serializable {
 
   public:
     JsonElement();
-    JsonElement(JsonElement::Type type);
-    JsonElement(bool value);
-    JsonElement(double num);
-    JsonElement(long num);
-    JsonElement(const std::string &str);
+    explicit JsonElement(JsonElement::Type type);
+    explicit JsonElement(bool value);
+    explicit JsonElement(double num);
+    explicit JsonElement(long num);
+    explicit JsonElement(const std::string &str);
+    explicit JsonElement(char const *str);
     JsonElement(const JsonObject& object);
     JsonElement(const JsonArray& array);
 
     JsonElement(const JsonElement& ele);
-    JsonElement(JsonElement&& ele);
+    explicit JsonElement(JsonElement&& ele);
     JsonElement& operator = (const JsonElement& ele);
     ~JsonElement();
 
