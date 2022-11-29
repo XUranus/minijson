@@ -5,13 +5,23 @@
 ```
 mkdir build && cd build
 cmake .. && cmake --build .
-./test/minijson_test
 ```
+test and run code coverage:
+```
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Coverage && cmake --build
+./test/bin/minijson_test # run test
+lcov --capture --directory ./test/CMakeFiles/minijson_test.dir --output-file Json.cpp.info
+genhtml Json.cpp.info
+```
+
+
 ## usage
 1. Serialization/deserilization of basic type
 ```C++
+#include <bits/stdc++.h>
 #include "Json.h"
-using using namespace xuranus::minijson;
+using namespace xuranus::minijson;
 
 int main() {
   std::string jsonStr = R"(
@@ -36,8 +46,9 @@ int main() {
 
 2. Serialization/deserilization of struct
 ``` C++
+#include <bits/stdc++.h>
 #include "Json.h"
-using using namespace xuranus::minijson;
+using namespace xuranus::minijson;
 
 struct Book {
   std::string m_name;
