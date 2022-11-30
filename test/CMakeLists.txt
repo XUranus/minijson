@@ -11,6 +11,8 @@ SET(Sources
   MiniJsonTest.cpp
 )
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 # auto fetch googletest
 include(FetchContent)
 FetchContent_Declare(

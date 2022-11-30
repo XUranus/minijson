@@ -10,11 +10,8 @@ test and run code coverage:
 ```
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Coverage && cmake --build
-./test/bin/minijson_test # run test
-lcov --capture --directory ./test/CMakeFiles/minijson_test.dir --output-file Json.cpp.info
-genhtml Json.cpp.info
+make minijson_lcov_test
 ```
-
 
 ## usage
 1. Serialization/deserilization of basic type
