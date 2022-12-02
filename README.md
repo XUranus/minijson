@@ -9,8 +9,9 @@ cmake .. && cmake --build .
 test and run code coverage:
 ```
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Coverage && cmake --build
-make minijson_lcov_test
+cmake .. -DCMAKE_BUILD_TYPE=Coverage && cmake --build .
+make minijson_lcov_test # lcov
+make minijson_gcovr_test # gcovr
 ```
 
 ## usage

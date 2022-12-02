@@ -105,6 +105,32 @@ TEST(SerializationTest, NumberFloatScientificNotation) {
   EXPECT_EQ(element.ToNumber(), -1145100);
 }
 
+TEST(SerializationTest, JsonElementConstructorTest) {
+  JsonElement jsonNull(JsonElement::Type::JSON_NULL);
+  EXPECT_TRUE(jsonNull.IsNull());
+  EXPECT_EQ(jsonNull.TypeName(), "JSON_NULL");
+
+  JsonElement jsonNumber(JsonElement::Type::JSON_NUMBER);
+  EXPECT_TRUE(jsonNumber.IsNumber());
+  EXPECT_EQ(jsonNumber.TypeName(), "JSON_NUMBER");
+
+  JsonElement jsonBool(JsonElement::Type::JSON_BOOL);
+  EXPECT_TRUE(jsonBool.IsBool());
+  EXPECT_EQ(jsonBool.TypeName(), "JSON_BOOL");
+
+  JsonElement jsonString(JsonElement::Type::JSON_STRING);
+  EXPECT_TRUE(jsonString.IsString());
+  EXPECT_EQ(jsonString.TypeName(), "JSON_STRING");
+
+  JsonElement jsonArray(JsonElement::Type::JSON_ARRAY);
+  EXPECT_TRUE(jsonArray.IsJsonArray());
+  EXPECT_EQ(jsonArray.TypeName(), "JSON_ARRAY");
+
+  JsonElement jsonObject(JsonElement::Type::JSON_OBJECT);
+  EXPECT_TRUE(jsonObject.IsJsonObject());
+  EXPECT_EQ(jsonObject.TypeName(), "JSON_OBJECT");
+}
+
 TEST(SerializationTest, JsonParserBasicTest) {
   std::string str = R"(
     {
