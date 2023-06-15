@@ -1,17 +1,23 @@
-cmake_minimum_required(VERSION 3.14)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 
-set(Project minijson)
-project(${Project} C CXX)
+SET(Project minijson)
+PROJECT(${Project} C CXX)
+SET(SOURCE_DIR ${${Project}_SOURCE_DIR})
+
+MESSAGE(STATUS "source directory is "${SOURCE_DIR})
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE on)
-set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi /Ob0 /Od /RTC1")
+
+if(${CMAKE_HOST_WIN32})
+    set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi /Ob0 /Od /RTC1")
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/")
 # code coverage
-IF (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "Coverage")
-    include(CodeCoverage)
+IF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
+    INCLUDE(${SOURCE_DIR}/CodeCoverage.cmake)
     APPEND_COVERAGE_COMPILER_FLAGS()
     SETUP_TARGET_FOR_COVERAGE_LCOV(
         NAME minijson_lcov_test
