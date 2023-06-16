@@ -4,7 +4,7 @@ SET(Project minijson)
 PROJECT(${Project} C CXX)
 SET(SOURCE_DIR ${${Project}_SOURCE_DIR})
 
-MESSAGE(STATUS "source directory is "${SOURCE_DIR})
+MESSAGE(STATUS "source directory is " ${SOURCE_DIR})
 
 SET(CMAKE_C_STANDARD 99)
 SET(CMAKE_CXX_STANDARD 11)
