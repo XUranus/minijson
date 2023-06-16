@@ -6,17 +6,26 @@ SET(SOURCE_DIR ${${Project}_SOURCE_DIR})
 
 MESSAGE(STATUS "source directory is "${SOURCE_DIR})
 
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_POSITION_INDEPENDENT_CODE on)
+SET(CMAKE_C_STANDARD 99)
+SET(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_POSITION_INDEPENDENT_CODE on)
 
-if(${CMAKE_HOST_WIN32})
-    set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi /Ob0 /Od /RTC1")
-endif()
+IF(${CMAKE_HOST_WIN32})
+    SET(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi /Ob0 /Od /RTC1")
+endIF()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/")
-# code coverage
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/")
+SET(Headers Json.h)
+SET(Sources Json.cpp)
+
+add_library(${Project} SHARED ${Sources} ${Headers})
+add_library(${Project}_static STATIC ${Sources} ${Headers})
+
+# build test and run code coverage
 IF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
+
+    ENABLE_TESTING()
+
     INCLUDE(${SOURCE_DIR}/CodeCoverage.cmake)
     APPEND_COVERAGE_COMPILER_FLAGS()
     SETUP_TARGET_FOR_COVERAGE_LCOV(
@@ -31,19 +40,6 @@ IF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
         BASE_DIRECTORY "${PROJECT_SOURCE_DIR}"
         EXCLUDE "${PROJECT_SOURCE_DIR}/test/*" "/usr/include/*" "*googlemock*" "*googletest*" "*build*"
     )
+
+    ADD_SUBDIRECTORY("test")
 ENDIF()
-
-enable_testing()
-
-SET(Headers
-    Json.h
-)
-
-SET(Sources
-    Json.cpp
-)
-
-add_library(${Project} SHARED ${Sources} ${Headers})
-add_library(${Project}_static STATIC ${Sources} ${Headers})
-
-add_subdirectory(test)

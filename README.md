@@ -2,6 +2,7 @@
 > a mini Json library C++ implement
 
 ## build & test
+build static/dynamic library:
 ```
 mkdir build && cd build
 cmake .. && cmake --build .
