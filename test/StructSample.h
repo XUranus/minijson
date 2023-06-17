@@ -17,12 +17,14 @@
 #include "../Json.h"
 
 struct Book {
+    using RangeType = std::vector<std::pair<uint32_t, uint32_t>>;
+
     std::string                 m_name;
     int                         m_id;
     float                       m_currentPrice;
     bool                        m_soldOut;
     std::vector<std::string>    m_tags;
-    std::pair<float, float>     m_priceRange;
+    RangeType                   m_pageWithPic;
 
     SERIALIZE_SECTION_BEGIN
     SERIALIZE_FIELD(name, m_name);
@@ -30,7 +32,7 @@ struct Book {
     SERIALIZE_FIELD(price, m_currentPrice);
     SERIALIZE_FIELD(soldOut, m_soldOut);
     SERIALIZE_FIELD(tags, m_tags);
-    SERIALIZE_FIELD(priceRange, m_priceRange);
+    SERIALIZE_FIELD(pageWithPic, m_pageWithPic);
     SERIALIZE_SECTION_END
 };
 

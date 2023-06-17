@@ -301,6 +301,35 @@ namespace rules {
         return;
     }
 
+    // cast between std::pair and JsonElement
+    template<typename T, typename std::enable_if<
+        std::is_same<T, std::pair<typename T::first_type, typename T::second_type>>::value
+        >::type* = nullptr>
+    void CastFromJsonElement(const JsonElement& ele, T& value) {
+        JsonArray array = ele.ToJsonArray();
+        if (array.size() < 2) {
+            return;
+        }
+        CastFromJsonElement<typename T::first_type>(array[0], value.first);
+        CastFromJsonElement<typename T::second_type>(array[0], value.first);
+        return;
+    }
+
+    template<typename T, typename std::enable_if<
+        std::is_same<T, std::pair<typename T::first_type, typename T::second_type>>::value
+        >::type* = nullptr>
+    void CastToJsonElement(JsonElement& ele, const T& value) {
+        JsonArray array;
+        JsonElement firstItemElement;
+        JsonElement secondItemElement;
+        CastToJsonElement<typename T::first_type>(firstItemElement, value.first);
+        CastToJsonElement<typename T::second_type>(secondItemElement, value.second);
+        array.push_back(firstItemElement);
+        array.push_back(secondItemElement);
+        ele = JsonElement(array);
+        return;
+    }
+
     // cast between std::vector or std::list and JsonElement
     template<typename T, typename std::enable_if<
         std::is_same<T, std::vector<typename T::value_type>>::value ||
@@ -362,35 +391,6 @@ namespace rules {
             object[p.first] = valueElement;
         }
         ele = JsonElement(object);
-        return;
-    }
-
-    // cast between std::pair and JsonElement
-    template<typename T, typename std::enable_if<
-        std::is_same<T, std::pair<typename T::first_type, typename T::second_type>>::value
-        >::type* = nullptr>
-    void CastFromJsonElement(const JsonElement& ele, T& value) {
-        JsonArray array = ele.ToJsonArray();
-        if (array.size() < 2) {
-            return;
-        }
-        CastFromJsonElement<typename T::first_type>(array[0], value.first);
-        CastFromJsonElement<typename T::second_type>(array[0], value.first);
-        return;
-    }
-
-    template<typename T, typename std::enable_if<
-        std::is_same<T, std::pair<typename T::first_type, typename T::second_type>>::value
-        >::type* = nullptr>
-    void CastToJsonElement(JsonElement& ele, const T& value) {
-        JsonArray array;
-        JsonElement firstItemElement;
-        JsonElement secondItemElement;
-        CastToJsonElement<typename T::first_type>(firstItemElement, value.first);
-        CastToJsonElement<typename T::second_type>(secondItemElement, value.second);
-        array.push_back(firstItemElement);
-        array.push_back(secondItemElement);
-        ele = JsonElement(array);
         return;
     }
 

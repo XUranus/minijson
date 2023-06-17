@@ -185,7 +185,7 @@ TEST(SerializationTest, NestedStructSerialization) {
     book1.m_currentPrice = 11.4;
     book1.m_soldOut = true;
     book1.m_tags = { "C++", "Programming", "Language" };
-    book1.m_priceRange = { 11.4, 51.4 };
+    book1.m_pageWithPic = { { 11, 45}, { 141, 9810} };
 
     Book book2 {};
     book2.m_name = "Essential C++";
@@ -193,7 +193,6 @@ TEST(SerializationTest, NestedStructSerialization) {
     book2.m_currentPrice = 19.19;
     book2.m_soldOut = false;
     book2.m_tags = { "Programming", "Computer Science" };
-    book2.m_priceRange = { 19.19, 81.0 };
 
     Author author1 {};
     author1.m_name = "Stanley B. LippmanBarbara E. Moo JoséeLaJoie";
