@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <string>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include <list>
@@ -417,7 +418,7 @@ namespace util {
     std::string DoubleToString(double value);
 
     template<typename T>
-    auto Serialize(T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__(), std::string());
+    auto Serialize(const T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__(), std::string());
 
     template<typename T>
     auto Deserialize(const std::string& jsonStr, T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__());
@@ -425,10 +426,11 @@ namespace util {
 
 // util template function implement
 template<typename T>
-auto util::Serialize(T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__(), std::string())
+auto util::Serialize(const T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__(), std::string())
 {
     JsonObject object {};
-    value._XURANUS_JSON_CPP_SERIALIZE_METHOD_(object, true); 
+    auto valuePtr = const_cast<typename std::remove_const<T>::type*>(&value);
+    valuePtr->_XURANUS_JSON_CPP_SERIALIZE_METHOD_(object, true); 
     return object.Serialize();
 }
 
