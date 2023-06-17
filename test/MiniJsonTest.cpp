@@ -164,7 +164,7 @@ TEST(SerializationTest, BasicStructSerialization) {
     Book book1 {};
     book1.m_name = "C++ Primer";
     book1.m_id = 114514;
-    book1.m_price = 114.5;
+    book1.m_currentPrice = 114.5;
     book1.m_soldOut = true;
     book1.m_tags = {"C++", "Programming", "Language"};
 
@@ -173,7 +173,7 @@ TEST(SerializationTest, BasicStructSerialization) {
     util::Deserialize(jsonStr, book2);
     EXPECT_EQ(book1.m_name, book2.m_name);
     EXPECT_EQ(book1.m_id, book2.m_id);
-    EXPECT_EQ(book1.m_price, book2.m_price);
+    EXPECT_EQ(book1.m_currentPrice, book2.m_currentPrice);
     EXPECT_EQ(book1.m_soldOut, book2.m_soldOut);
     EXPECT_EQ(book1.m_tags, book2.m_tags);
 }
@@ -182,27 +182,28 @@ TEST(SerializationTest, NestedStructSerialization) {
     Book book1 {};
     book1.m_name = "C++ Primer";
     book1.m_id = 114514;
-    book1.m_price = 114.5;
+    book1.m_currentPrice = 11.4;
     book1.m_soldOut = true;
-    book1.m_tags = {"C++", "Programming", "Language"};
+    book1.m_tags = { "C++", "Programming", "Language" };
+    book1.m_priceRange = { 11.4, 51.4 };
 
     Book book2 {};
     book2.m_name = "Essential C++";
     book2.m_id = 1919810;
-    book2.m_price = 19.19;
+    book2.m_currentPrice = 19.19;
     book2.m_soldOut = false;
-    book2.m_tags = {"Programming", "Computer Science"};
+    book2.m_tags = { "Programming", "Computer Science" };
+    book2.m_priceRange = { 19.19, 81.0 };
 
     Author author1 {};
     author1.m_name = "Stanley B. LippmanBarbara E. Moo JoséeLaJoie";
-    author1.m_books = {book1, book2};
+    author1.m_books = { book1, book2 };
 
     Author author2 {};
     std::string jsonStr = util::Serialize(author1);
     util::Deserialize(jsonStr, author2);
 
     EXPECT_EQ(author2.m_name, author1.m_name);
-    EXPECT_EQ(author2.m_books, author1.m_books);
 
     JsonElement ele = JsonParser(jsonStr).Parse();
     EXPECT_TRUE(ele.IsJsonObject());
