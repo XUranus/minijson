@@ -534,7 +534,7 @@ void JsonScanner::ScanNextNumber()
     std::string numberStr = m_str.substr(beginPos, m_pos - beginPos);
     try {
         m_tmpNumberValue = std::atof(numberStr.c_str());
-    } catch (std::exception &e) {
+    } catch (...) {
         Panic("invalid number %lf, pos: %lu", m_tmpNumberValue, beginPos);
     }
 }
@@ -583,7 +583,7 @@ bool JsonParser::IsValid()
 {
     try {
         Parse();
-    } catch (const std::exception& e) {
+    } catch (...) {
         return false;
     }
     return true;

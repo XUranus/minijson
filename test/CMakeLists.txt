@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.14)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 
-SET(Project minijson_test)
-project(${Project} C CXX)
+SET(Project "minijson_test")
+SET(${Project} C CXX)
 
 SET(Headers
     StructSample.h
@@ -14,27 +14,27 @@ SET(Sources
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # auto fetch googletest
-include(FetchContent)
+INCLUDE(FetchContent)
 FetchContent_Declare(
     googletest
     URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
 )
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+SET(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(${Project} ${Sources} ${Headers})
+ADD_EXECUTABLE(${Project} ${Sources} ${Headers})
 
-target_link_libraries(${Project} PUBLIC 
-        minijson_static
-        GTest::gtest_main
+TARGET_LINK_LIBRARIES(${Project} PUBLIC 
+    minijson_static
+    GTest::gtest_main
 )
 
-add_test(
-        NAME ${Project}
-        COMMAND ${Project}
+ADD_TEST(
+    NAME ${Project}
+    COMMAND ${Project}
 )
 
-include(GoogleTest)
+INCLUDE(GoogleTest)
 gtest_discover_tests(${Project})
