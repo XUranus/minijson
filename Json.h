@@ -311,7 +311,7 @@ namespace rules {
             return;
         }
         CastFromJsonElement<typename T::first_type>(array[0], value.first);
-        CastFromJsonElement<typename T::second_type>(array[0], value.first);
+        CastFromJsonElement<typename T::second_type>(array[1], value.second);
         return;
     }
 
