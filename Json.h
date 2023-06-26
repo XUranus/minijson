@@ -35,12 +35,16 @@
  * null  JsonNumber  bool   JsonObject  JsonArray
  *        
  **/
-namespace xuranus {
-namespace minijson {
 
-class JsonElement;
-class JsonObject;
-class JsonArray;
+#ifdef _WIN32
+    #ifdef LIBRARY_EXPORT
+        #define MINIJSON_API __declspec(dllexport)
+    #else
+        #define MINIJSON_API __declspec(dllimport)
+    #endif
+#else
+    #define MINIJSON_API  __attribute__((__visibility__("default")))
+#endif
 
 #define SERIALIZE_SECTION_BEGIN                                                                 \
 public:                                                                                         \
@@ -61,6 +65,13 @@ public:                                                                         
         }                                                                                           \
     } while (0)                                                                                   \
 
+namespace xuranus {
+namespace minijson {
+
+class JsonElement;
+class JsonObject;
+class JsonArray;
+
 inline void Panic(const char* str, ...)
 {
     char message[100]; 
@@ -72,12 +83,12 @@ inline void Panic(const char* str, ...)
 }
 
 // serializable interface
-class Serializable {
+class MINIJSON_API Serializable {
     virtual std::string Serialize() const = 0;
 };
 
 // base class of json variant
-class JsonElement: public Serializable {
+class MINIJSON_API JsonElement: public Serializable {
     public:
         enum class Type {
             JSON_OBJECT,
@@ -141,18 +152,18 @@ class JsonElement: public Serializable {
         Value m_value {};
 };
 
-class JsonObject: public std::map<std::string, JsonElement>, public Serializable {
+class MINIJSON_API JsonObject: public std::map<std::string, JsonElement>, public Serializable {
 public:
     std::string Serialize() const override;
 };
 
-class JsonArray: public std::vector<JsonElement>, public Serializable {
+class MINIJSON_API JsonArray: public std::vector<JsonElement>, public Serializable {
 public:
     std::string Serialize() const override;
 };
 
 // to split json string into token
-class JsonScanner {
+class MINIJSON_API JsonScanner {
     public:
         enum class Token {
             WHITESPACE, // ' ', '\n', '\r', '\t'
@@ -221,7 +232,7 @@ class JsonScanner {
 };
 
 
-class JsonParser {
+class MINIJSON_API JsonParser {
     private:
         JsonScanner m_scanner;
 
@@ -413,9 +424,9 @@ namespace rules {
 
 // utils used for user to do serialization and deserialzation
 namespace util {
-    std::string EscapeString(const std::string& str);
-    std::string UnescapeString(const std::string& str);
-    std::string DoubleToString(double value);
+    MINIJSON_API std::string EscapeString(const std::string& str);
+    MINIJSON_API std::string UnescapeString(const std::string& str);
+    MINIJSON_API std::string DoubleToString(double value);
 
     template<typename T>
     auto Serialize(const T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__(), std::string());
