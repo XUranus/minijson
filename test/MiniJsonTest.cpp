@@ -16,18 +16,6 @@
 
 using namespace xuranus::minijson;
 
-TEST(StringSerializationTest, EscapeStringTest) {
-    std::string str = "\thello\n\\\rworld\t";
-    std::string escapedStr = R"(\thello\n\\\rworld\t)";
-    EXPECT_EQ(util::EscapeString(str), escapedStr);
-}
-
-TEST(StringSerializationTest, UnescapeStringTest) {
-    std::string escapedStr = R"(\thello\n\\\rworld\t)";
-    std::string unescapedStr = "\thello\n\\\rworld\t";
-    EXPECT_EQ(util::UnescapeString(escapedStr), unescapedStr);
-}
-
 TEST(SerializationTest, BasicString) {
     std::string jsonStr = R"("this is a basic string")";
     std::string str = "this is a basic string";

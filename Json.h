@@ -9,8 +9,8 @@
 *
 ================================================================*/
 
-#ifndef _XURANUS_JSON_CPP_
-#define _XURANUS_JSON_CPP_
+#ifndef _XURANUS_MINI_JSON_HEADER_
+#define _XURANUS_MINI_JSON_HEADER_
 
 #include <cstddef>
 #include <iostream>
@@ -34,13 +34,22 @@
  *   |      |         |           |           |
  * null  JsonNumber  bool   JsonObject  JsonArray
  *        
- **/
+ *
+ * @brief
+ * add -DLIBRARY_EXPORT build param to export lib on Win32 MSVC
+ * define LIBRARY_IMPORT before including Json.h to add __declspec(dllimport) to use dll library
+ * libminijson is linked static by default
+ */
 
 #ifdef _WIN32
     #ifdef LIBRARY_EXPORT
         #define MINIJSON_API __declspec(dllexport)
     #else
-        #define MINIJSON_API __declspec(dllimport)
+        #ifdef LIBRARY_IMPORT
+            #define MINIJSON_API __declspec(dllimport)
+        #else
+            #define MINIJSON_API
+        #endif
     #endif
 #else
     #define MINIJSON_API  __attribute__((__visibility__("default")))
@@ -71,13 +80,20 @@ namespace minijson {
 class JsonElement;
 class JsonObject;
 class JsonArray;
+class JsonScanner;
 
 inline void Panic(const char* str, ...)
 {
-    char message[100]; 
+    const int PANIC_MESSAGE_MAX = 512;
+    char message[PANIC_MESSAGE_MAX]; 
     va_list args;
     va_start(args, str);
+#ifdef _MSC_VER
+    // supress MSVC warning
+    vsprintf_s(message, PANIC_MESSAGE_MAX, str, args);
+#else
     vsprintf(message, str, args);
+#endif
     va_end(args);
     throw std::logic_error(message); 
 }
@@ -162,88 +178,18 @@ public:
     std::string Serialize() const override;
 };
 
-// to split json string into token
-class MINIJSON_API JsonScanner {
-    public:
-        enum class Token {
-            WHITESPACE, // ' ', '\n', '\r', '\t'
-            NUMBER,
-            STRING,
-            LITERAL_TRUE, // true
-            LITERAL_FALSE, // false
-            LITERAL_NULL, // null
-            COMMA, // ,
-            COLON, // :
-            ARRAY_BEGIN, // [
-            ARRAY_END, // ]
-            OBJECT_BEGIN, // {
-            OBJECT_END, // }
-            EOF_TOKEN // mark the end of the json string
-        };
-
-    public:
-        JsonScanner(const std::string &str);
-        void Reset();
-        Token Next();
-        double GetNumberValue();
-        std::string GetStringValue();
-        inline void RollBack() { m_pos = m_prevPos; }
-        inline size_t Position() { return m_pos; }
-        static std::string TokenName(Token token);
-
-    private:  
-        void ScanNextString();
-        void ScanNextNumber();
-
-        inline bool IsWhiltespaceToken(char ch)
-        {
-            return (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
-        }
-
-        inline bool IsDigit(char ch)
-        {
-            return '0' <= ch && ch <= '9';
-        }
-        
-        inline bool SkipWhitespaceToken()
-        {
-            while(m_pos < m_str.size() && IsWhiltespaceToken(m_str[m_pos])) {
-                m_pos++;
-            }
-            return m_pos < m_str.size();
-        }
-
-        inline void ScanLiteral(const std::string& literal, int offset)
-        {
-            if (m_str.compare(m_pos, offset, literal) == 0) {
-                m_pos += offset;
-            } else {
-                Panic("unknown literal token at position = %lu, do you mean: %s ?", m_pos, literal.c_str());
-            }
-        }
-    private:
-        std::string m_str;
-        std::size_t m_pos = 0;
-        std::size_t m_prevPos = 0;
-
-        std::string m_tmpStrValue {};
-        double m_tmpNumberValue {0};
-        std::map<char, char> m_escapeMap {};
-};
-
-
 class MINIJSON_API JsonParser {
-    private:
-        JsonScanner m_scanner;
-
     public:
-        JsonParser(const std::string str);
+        explicit JsonParser(const std::string& str);
+        ~JsonParser();
         JsonElement Parse();
         bool IsValid();
     private:
         JsonElement ParseNext();
         JsonObject ParseJsonObject();
         JsonArray ParseJsonArray();
+    private:
+        JsonScanner* m_scanner { nullptr };
 };
 
 // use CastFromJsonElement & CastToJsonElement template methods to define some serialization/deserialzation rules
@@ -424,10 +370,6 @@ namespace rules {
 
 // utils used for user to do serialization and deserialzation
 namespace util {
-    MINIJSON_API std::string EscapeString(const std::string& str);
-    MINIJSON_API std::string UnescapeString(const std::string& str);
-    MINIJSON_API std::string DoubleToString(double value);
-
     template<typename T>
     auto Serialize(const T& value) -> decltype(typename T::__XURANUS_JSON_SERIALIZATION_MAGIC__(), std::string());
 

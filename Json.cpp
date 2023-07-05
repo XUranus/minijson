@@ -12,8 +12,92 @@
 #include "Json.h"
 #include <cstdio>
 
+// to prevent header corruption
+namespace xuranus {
+namespace minijson {
+
+// to split json string into token
+class JsonScanner {
+    public:
+        enum class Token {
+            WHITESPACE, // ' ', '\n', '\r', '\t'
+            NUMBER,
+            STRING,
+            LITERAL_TRUE, // true
+            LITERAL_FALSE, // false
+            LITERAL_NULL, // null
+            COMMA, // ,
+            COLON, // :
+            ARRAY_BEGIN, // [
+            ARRAY_END, // ]
+            OBJECT_BEGIN, // {
+            OBJECT_END, // }
+            EOF_TOKEN // mark the end of the json string
+        };
+
+    public:
+        JsonScanner(const std::string &str);
+        void Reset();
+        Token Next();
+        double GetNumberValue();
+        std::string GetStringValue();
+        inline void RollBack() { m_pos = m_prevPos; }
+        inline size_t Position() { return m_pos; }
+        static std::string TokenName(Token token);
+
+    private:  
+        void ScanNextString();
+        void ScanNextNumber();
+
+        inline bool IsWhiltespaceToken(char ch)
+        {
+            return (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
+        }
+
+        inline bool IsDigit(char ch)
+        {
+            return '0' <= ch && ch <= '9';
+        }
+        
+        inline bool SkipWhitespaceToken()
+        {
+            while(m_pos < m_str.size() && IsWhiltespaceToken(m_str[m_pos])) {
+                m_pos++;
+            }
+            return m_pos < m_str.size();
+        }
+
+        inline void ScanLiteral(const std::string& literal, int offset)
+        {
+            if (m_str.compare(m_pos, offset, literal) == 0) {
+                m_pos += offset;
+            } else {
+                Panic("unknown literal token at position = %lu, do you mean: %s ?", m_pos, literal.c_str());
+            }
+        }
+    private:
+        std::string m_str;
+        std::size_t m_pos = 0;
+        std::size_t m_prevPos = 0;
+
+        std::string m_tmpStrValue {};
+        double m_tmpNumberValue {0};
+        std::map<char, char> m_escapeMap {};
+};
+
+namespace util {
+    std::string EscapeString(const std::string& str);
+    std::string UnescapeString(const std::string& str);
+    std::string DoubleToString(double value);
+}
+
+}
+}
+
 using namespace xuranus::minijson;
 using namespace xuranus::minijson::util;
+
+// implement start from here
 
 JsonElement::JsonElement()
 {
@@ -566,15 +650,25 @@ std::string JsonScanner::TokenName(Token token)
 
 
 
-JsonParser::JsonParser(const std::string str): m_scanner(str)
-{}
+JsonParser::JsonParser(const std::string& str) 
+{
+    m_scanner = new JsonScanner(str);
+}
+
+JsonParser::~JsonParser()
+{
+    if (m_scanner != nullptr) {
+        delete m_scanner;
+        m_scanner = nullptr;
+    }
+}
 
 JsonElement JsonParser::Parse()
 {
-    m_scanner.Reset();
+    m_scanner->Reset();
     JsonElement ele = ParseNext();
-    if (m_scanner.Next() != JsonScanner::Token::EOF_TOKEN) {
-        Panic("json scanner reached non-eof token, position = %lu", m_scanner.Position());
+    if (m_scanner->Next() != JsonScanner::Token::EOF_TOKEN) {
+        Panic("json scanner reached non-eof token, position = %lu", m_scanner->Position());
     }
     return ele;
 }
@@ -591,7 +685,7 @@ bool JsonParser::IsValid()
 
 JsonElement JsonParser::ParseNext()
 {
-    JsonScanner::Token token = m_scanner.Next();
+    JsonScanner::Token token = m_scanner->Next();
     switch (token) {
         case JsonScanner::Token::OBJECT_BEGIN: {
             return ParseJsonObject();
@@ -600,10 +694,10 @@ JsonElement JsonParser::ParseNext()
             return ParseJsonArray();
         }
         case JsonScanner::Token::STRING: {
-            return JsonElement(m_scanner.GetStringValue());
+            return JsonElement(m_scanner->GetStringValue());
         }
         case JsonScanner::Token::NUMBER: {
-            return JsonElement(m_scanner.GetNumberValue());
+            return JsonElement(m_scanner->GetNumberValue());
         }
         case JsonScanner::Token::LITERAL_TRUE: {
             return JsonElement(true);
@@ -622,30 +716,30 @@ JsonElement JsonParser::ParseNext()
 JsonObject JsonParser::ParseJsonObject()
 {
     JsonObject object {};
-    JsonScanner::Token token = m_scanner.Next();
+    JsonScanner::Token token = m_scanner->Next();
     if (token == JsonScanner::Token::OBJECT_END) {
         return object;
     }
-    m_scanner.RollBack();
+    m_scanner->RollBack();
 
     while (true) {
-        size_t pos = m_scanner.Position();
-        token = m_scanner.Next();
+        size_t pos = m_scanner->Position();
+        token = m_scanner->Next();
         if (token != JsonScanner::Token::STRING) {
             Panic("expect a string as key for json object, position: %lu", pos);
         }
-        std::string key = m_scanner.GetStringValue();
+        std::string key = m_scanner->GetStringValue();
 
-        pos = m_scanner.Position();
-        token = m_scanner.Next();
+        pos = m_scanner->Position();
+        token = m_scanner->Next();
         if (token != JsonScanner::Token::COLON) {
             Panic("expect ':' in json object, position: %lu", pos);
         }
         JsonElement ele = ParseNext();
         object[key] = ele;
 
-        pos = m_scanner.Position();
-        token = m_scanner.Next();
+        pos = m_scanner->Position();
+        token = m_scanner->Next();
         if (token == JsonScanner::Token::OBJECT_END) {
             break;
         }
@@ -659,16 +753,16 @@ JsonObject JsonParser::ParseJsonObject()
 JsonArray JsonParser::ParseJsonArray()
 {
     JsonArray array {};
-    JsonScanner::Token token = m_scanner.Next();
+    JsonScanner::Token token = m_scanner->Next();
     if (token == JsonScanner::Token::ARRAY_END) {
         return array;
     }
-    m_scanner.RollBack();
+    m_scanner->RollBack();
 
     while (true) {
         array.push_back(ParseNext());
-        size_t pos = m_scanner.Position();
-        token = m_scanner.Next();
+        size_t pos = m_scanner->Position();
+        token = m_scanner->Next();
         if (token == JsonScanner::Token::ARRAY_END) {
             break;
         }
@@ -678,9 +772,6 @@ JsonArray JsonParser::ParseJsonArray()
     }
     return array;
 }
-
-
-
 
 std::string util::EscapeString(const std::string& str)
 {
