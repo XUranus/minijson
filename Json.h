@@ -245,7 +245,7 @@ namespace rules {
 
     template<typename T, typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value>::type* = nullptr>
     void CastToJsonElement(JsonElement& ele, const T& value) {
-        ele = JsonElement(static_cast<long>(value));
+        ele = JsonElement(static_cast<int64_t>(value));
         return;
     }
 
