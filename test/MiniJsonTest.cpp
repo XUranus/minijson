@@ -70,27 +70,34 @@ TEST(SerializationTest, NumberInteger) {
     std::string str = "1919810";
     JsonElement element = JsonParser(str).Parse();
     EXPECT_EQ(element.Serialize(), "1919810");
-    EXPECT_TRUE(element.IsNumber());
-    EXPECT_EQ(element.AsNumber(), 1919810);
-    EXPECT_EQ(element.ToNumber(), 1919810);
+    EXPECT_TRUE(element.IsLongInt());
+    EXPECT_EQ(element.AsLongInt(), 1919810);
+    EXPECT_EQ(element.ToLongInt(), 1919810);
 }
 
 TEST(SerializationTest, NumberBasicFloat) {
     std::string str = "114.51400";
     JsonElement element = JsonParser(str).Parse();
     EXPECT_EQ(element.Serialize(), "114.514");
-    EXPECT_TRUE(element.IsNumber());
-    EXPECT_EQ(element.AsNumber(), 114.514);
-    EXPECT_EQ(element.ToNumber(), 114.514);
+    EXPECT_TRUE(element.IsDouble());
+    EXPECT_EQ(element.AsDouble(), 114.514);
+    EXPECT_EQ(element.ToDouble(), 114.514);
 }
 
 TEST(SerializationTest, NumberFloatScientificNotation) {
     std::string str = "-114.51E+4";
     JsonElement element = JsonParser(str).Parse();
     EXPECT_EQ(element.Serialize(), "-1145100");
-    EXPECT_TRUE(element.IsNumber());
-    EXPECT_EQ(element.AsNumber(), -1145100);
-    EXPECT_EQ(element.ToNumber(), -1145100);
+    EXPECT_TRUE(element.IsDouble());
+    EXPECT_EQ(element.ToDouble(), -1145100);
+}
+
+TEST(SerializationTest, LongIntNumber) {
+    std::string str = "1099511627776";
+    JsonElement element = JsonParser(str).Parse();
+    EXPECT_EQ(element.Serialize(), "1099511627776");
+    EXPECT_TRUE(element.IsLongInt());
+    EXPECT_EQ(element.AsLongInt(), 1099511627776L);
 }
 
 TEST(SerializationTest, JsonElementConstructorTest) {
@@ -98,9 +105,9 @@ TEST(SerializationTest, JsonElementConstructorTest) {
     EXPECT_TRUE(jsonNull.IsNull());
     EXPECT_EQ(jsonNull.TypeName(), "JSON_NULL");
 
-    JsonElement jsonNumber(JsonElement::Type::JSON_NUMBER);
-    EXPECT_TRUE(jsonNumber.IsNumber());
-    EXPECT_EQ(jsonNumber.TypeName(), "JSON_NUMBER");
+    JsonElement jsonNumber(JsonElement::Type::JSON_NUMBER_DOUBLE);
+    EXPECT_TRUE(jsonNumber.IsDouble());
+    EXPECT_EQ(jsonNumber.TypeName(), "JSON_NUMBER_DOUBLE");
 
     JsonElement jsonBool(JsonElement::Type::JSON_BOOL);
     EXPECT_TRUE(jsonBool.IsBool());
@@ -130,7 +137,7 @@ TEST(SerializationTest, JsonParserBasicTest) {
     JsonElement element = JsonParser(str).Parse();
     JsonObject object = element.AsJsonObject();
     EXPECT_EQ(object["name"].AsString(), "xuranus");
-    EXPECT_EQ(object["age"].AsNumber(), 300);
+    EXPECT_EQ(object["age"].AsLongInt(), 300);
     EXPECT_EQ(object["skills"].AsJsonArray()[0].AsString(), "C++");
     EXPECT_EQ(object["skills"].AsJsonArray()[1].AsString(), "Java");
     EXPECT_EQ(object["skills"].AsJsonArray()[2].AsString(), "Python");

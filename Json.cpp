@@ -39,8 +39,10 @@ class JsonScanner {
         JsonScanner(const std::string &str);
         void Reset();
         Token Next();
-        double GetNumberValue();
-        std::string GetStringValue();
+        double GetDoubleValue() const;
+        int64_t GetLongIntValue() const;
+        bool IsNumberLongInt() const;
+        std::string GetStringValue() const;
         inline void RollBack() { m_pos = m_prevPos; }
         inline size_t Position() { return m_pos; }
         static std::string TokenName(Token token);
@@ -81,7 +83,9 @@ class JsonScanner {
         std::size_t m_prevPos = 0;
 
         std::string m_tmpStrValue {};
-        double m_tmpNumberValue {0};
+        double m_tmpNumberDoubleValue {0};
+        int64_t m_tmpNumberLongValue {0};
+        bool m_int64Number { true };
         std::map<char, char> m_escapeMap {};
 };
 
@@ -89,6 +93,7 @@ namespace util {
     std::string EscapeString(const std::string& str);
     std::string UnescapeString(const std::string& str);
     std::string DoubleToString(double value);
+    std::string LongIntToString(int64_t value);
 }
 
 }
@@ -120,8 +125,12 @@ JsonElement::JsonElement(JsonElement::Type type)
             m_value.stringValue = new std::string();
             break;
         }
-        case JsonElement::Type::JSON_NUMBER: {
-            m_value.numberValue = 0;
+        case JsonElement::Type::JSON_NUMBER_LONG: {
+            m_value.numberLongValue = 0;
+            break;
+        }
+        case JsonElement::Type::JSON_NUMBER_DOUBLE: {
+            m_value.numberDoubleValue = 0;
             break;
         }
         case JsonElement::Type::JSON_BOOL: {
@@ -139,14 +148,14 @@ JsonElement::JsonElement(bool value): m_type(JsonElement::Type::JSON_BOOL)
     m_value.boolValue = value;
 }
 
-JsonElement::JsonElement(double num): m_type(JsonElement::Type::JSON_NUMBER)
+JsonElement::JsonElement(double num): m_type(JsonElement::Type::JSON_NUMBER_DOUBLE)
 {
-    m_value.numberValue = num;
+    m_value.numberDoubleValue = num;
 }
 
-JsonElement::JsonElement(long num): m_type(JsonElement::Type::JSON_NUMBER)
+JsonElement::JsonElement(int64_t num): m_type(JsonElement::Type::JSON_NUMBER_LONG)
 {
-    m_value.numberValue = static_cast<double>(num);
+    m_value.numberLongValue = num;
 }
 
 JsonElement::JsonElement(const std::string &str): m_type(JsonElement::Type::JSON_STRING)
@@ -186,8 +195,12 @@ JsonElement::JsonElement(const JsonElement& ele): m_type(ele.m_type)
             m_value.stringValue = new std::string(*ele.m_value.stringValue);
             break;
         }
-        case JsonElement::Type::JSON_NUMBER: {
-            m_value.numberValue = ele.m_value.numberValue;
+        case JsonElement::Type::JSON_NUMBER_LONG: {
+            m_value.numberLongValue = ele.m_value.numberLongValue;
+            break;
+        }
+        case JsonElement::Type::JSON_NUMBER_DOUBLE: {
+            m_value.numberDoubleValue = ele.m_value.numberDoubleValue;
             break;
         }
         case JsonElement::Type::JSON_BOOL: {
@@ -218,8 +231,12 @@ JsonElement::JsonElement(JsonElement&& ele): m_type(ele.m_type)
             ele.m_value.stringValue = nullptr;
             break;
         }
-        case JsonElement::Type::JSON_NUMBER: {
-            m_value.numberValue = ele.m_value.numberValue;
+        case JsonElement::Type::JSON_NUMBER_LONG: {
+            m_value.numberLongValue = ele.m_value.numberLongValue;
+            break;
+        }
+        case JsonElement::Type::JSON_NUMBER_DOUBLE: {
+            m_value.numberDoubleValue = ele.m_value.numberDoubleValue;
             break;
         }
         case JsonElement::Type::JSON_BOOL: {
@@ -253,7 +270,8 @@ JsonElement& JsonElement::operator = (const JsonElement& ele)
             m_value.stringValue = nullptr;
             break;
         }
-        case JsonElement::Type::JSON_NUMBER:
+        case JsonElement::Type::JSON_NUMBER_DOUBLE:
+        case JsonElement::Type::JSON_NUMBER_LONG:
         case JsonElement::Type::JSON_BOOL:
         case JsonElement::Type::JSON_NULL:
             break;
@@ -272,8 +290,12 @@ JsonElement& JsonElement::operator = (const JsonElement& ele)
             m_value.stringValue = new std::string(*ele.m_value.stringValue);
             break;
         }
-        case JsonElement::Type::JSON_NUMBER: {
-            m_value.numberValue = ele.m_value.numberValue;
+        case JsonElement::Type::JSON_NUMBER_LONG: {
+            m_value.numberLongValue = ele.m_value.numberLongValue;
+            break;
+        }
+        case JsonElement::Type::JSON_NUMBER_DOUBLE: {
+            m_value.numberDoubleValue = ele.m_value.numberDoubleValue;
             break;
         }
         case JsonElement::Type::JSON_BOOL: {
@@ -306,7 +328,8 @@ JsonElement::~JsonElement()
             m_value.stringValue = nullptr;
             break;
         }
-        case JsonElement::Type::JSON_NUMBER:
+        case JsonElement::Type::JSON_NUMBER_LONG:
+        case JsonElement::Type::JSON_NUMBER_DOUBLE:
         case JsonElement::Type::JSON_BOOL:
         case JsonElement::Type::JSON_NULL:
             break;
@@ -321,12 +344,20 @@ bool& JsonElement::AsBool()
     return m_value.boolValue;
 }
 
-double& JsonElement::AsNumber()
+double& JsonElement::AsDouble()
 {
-    if (m_type != JsonElement::Type::JSON_NUMBER) {
-        Panic("failed to convert json element %s as a number", TypeName().c_str());
+    if (m_type != JsonElement::Type::JSON_NUMBER_DOUBLE) {
+        Panic("failed to convert json element %s as a double", TypeName().c_str());
     }
-    return m_value.numberValue;
+    return m_value.numberDoubleValue;
+}
+
+int64_t& JsonElement::AsLongInt()
+{
+    if (m_type != JsonElement::Type::JSON_NUMBER_LONG) {
+        Panic("failed to convert json element %s as a long int", TypeName().c_str());
+    }
+    return m_value.numberLongValue;
 }
 
 void* JsonElement::AsNull() const
@@ -371,12 +402,20 @@ bool JsonElement::ToBool() const
     return m_value.boolValue;
 }
 
-double JsonElement::ToNumber() const
+double JsonElement::ToDouble() const
 {
-    if (m_type != JsonElement::Type::JSON_NUMBER) {
-        Panic("failed to convert json element %s as a number", TypeName().c_str());
+    if (m_type != JsonElement::Type::JSON_NUMBER_LONG && m_type != JsonElement::Type::JSON_NUMBER_DOUBLE) {
+        Panic("failed to convert json element %s as a double", TypeName().c_str());
     }
-    return m_value.numberValue;
+    return static_cast<double>(m_value.numberDoubleValue);
+}
+
+int64_t JsonElement::ToLongInt() const
+{
+    if (m_type != JsonElement::Type::JSON_NUMBER_LONG && m_type != JsonElement::Type::JSON_NUMBER_DOUBLE) {
+        Panic("failed to convert json element %s as a long int", TypeName().c_str());
+    }
+    return static_cast<int64_t>(m_value.numberLongValue);
 }
 
 void* JsonElement::ToNull() const
@@ -414,7 +453,8 @@ JsonArray JsonElement::ToJsonArray() const
 
 bool JsonElement::IsNull() const { return m_type == JsonElement::Type::JSON_NULL; }
 bool JsonElement::IsBool() const { return m_type == JsonElement::Type::JSON_BOOL; }
-bool JsonElement::IsNumber() const { return m_type == JsonElement::Type::JSON_NUMBER; }
+bool JsonElement::IsDouble() const { return m_type == JsonElement::Type::JSON_NUMBER_DOUBLE; }
+bool JsonElement::IsLongInt() const { return m_type == JsonElement::Type::JSON_NUMBER_LONG; }
 bool JsonElement::IsString() const { return m_type == JsonElement::Type::JSON_STRING; }
 bool JsonElement::IsJsonObject() const { return m_type == JsonElement::Type::JSON_OBJECT; }
 bool JsonElement::IsJsonArray() const { return m_type == JsonElement::Type::JSON_ARRAY; }
@@ -428,8 +468,10 @@ std::string JsonElement::TypeName() const
             return "JSON_ARRAY";
         case JsonElement::Type::JSON_STRING:
             return "JSON_STRING";
-        case JsonElement::Type::JSON_NUMBER:
-            return "JSON_NUMBER";
+        case JsonElement::Type::JSON_NUMBER_LONG:
+            return "JSON_NUMBER_LONG";
+        case JsonElement::Type::JSON_NUMBER_DOUBLE:
+            return "JSON_NUMBER_DOUBLE";
         case JsonElement::Type::JSON_BOOL:
             return "JSON_BOOL";
         case JsonElement::Type::JSON_NULL:
@@ -448,8 +490,11 @@ std::string JsonElement::Serialize() const
         case JsonElement::Type::JSON_BOOL: {
             return m_value.boolValue ? "true" : "false";
         }
-        case JsonElement::Type::JSON_NUMBER: {
-            return DoubleToString(m_value.numberValue);
+        case JsonElement::Type::JSON_NUMBER_DOUBLE: {
+            return DoubleToString(m_value.numberDoubleValue);
+        }
+        case JsonElement::Type::JSON_NUMBER_LONG: {
+            return LongIntToString(m_value.numberLongValue);
         }
         case JsonElement::Type::JSON_STRING: {
             return std::string("\"") + EscapeString(*m_value.stringValue) + "\"";
@@ -616,16 +661,31 @@ void JsonScanner::ScanNextNumber()
     }
 
     std::string numberStr = m_str.substr(beginPos, m_pos - beginPos);
-    try {
-        m_tmpNumberValue = std::atof(numberStr.c_str());
-    } catch (...) {
-        Panic("invalid number %lf, pos: %lu", m_tmpNumberValue, beginPos);
+    if (numberStr.find_last_of("eE.") == std::string::npos) {
+        try {
+            m_tmpNumberLongValue = std::atoll(numberStr.c_str());
+            m_int64Number = true;
+        } catch (...) {
+            Panic("invalid number %lf, pos: %lu", m_tmpNumberLongValue, beginPos);
+        }
+    } else {
+        try {
+            m_tmpNumberDoubleValue = std::atof(numberStr.c_str());
+            m_int64Number = false;
+        } catch (...) {
+            Panic("invalid number %llu, pos: %lu", m_tmpNumberDoubleValue, beginPos);
+        }
     }
+
 }
 
-double JsonScanner::GetNumberValue() { return m_tmpNumberValue; }
+double JsonScanner::GetDoubleValue() const { return m_tmpNumberDoubleValue; }
 
-std::string JsonScanner::GetStringValue() { return m_tmpStrValue; }
+int64_t JsonScanner::GetLongIntValue() const { return m_tmpNumberLongValue; }
+
+bool JsonScanner::IsNumberLongInt() const { return m_int64Number; }
+
+std::string JsonScanner::GetStringValue() const { return m_tmpStrValue; }
 
 std::string JsonScanner::TokenName(Token token)
 {
@@ -697,7 +757,8 @@ JsonElement JsonParser::ParseNext()
             return JsonElement(m_scanner->GetStringValue());
         }
         case JsonScanner::Token::NUMBER: {
-            return JsonElement(m_scanner->GetNumberValue());
+            return m_scanner->IsNumberLongInt() ? 
+                JsonElement(m_scanner->GetLongIntValue()) : JsonElement(m_scanner->GetDoubleValue());
         }
         case JsonScanner::Token::LITERAL_TRUE: {
             return JsonElement(true);
@@ -875,5 +936,11 @@ std::string util::DoubleToString(double value)
     if (res.back() == '.') {
         res.pop_back();
     }
+    return res;
+}
+
+std::string util::LongIntToString(int64_t value)
+{
+    std::string res = std::to_string(value);
     return res;
 }

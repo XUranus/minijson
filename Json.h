@@ -110,7 +110,8 @@ class MINIJSON_API JsonElement: public Serializable {
             JSON_OBJECT,
             JSON_ARRAY,
             JSON_STRING,
-            JSON_NUMBER,
+            JSON_NUMBER_LONG,
+            JSON_NUMBER_DOUBLE,
             JSON_BOOL,
             JSON_NULL
         };
@@ -119,7 +120,8 @@ class MINIJSON_API JsonElement: public Serializable {
             JsonObject* objectValue;
             JsonArray* arrayValue;
             std::string* stringValue;
-            double numberValue;
+            int64_t numberLongValue;
+            double numberDoubleValue;
             bool boolValue;
         };
 
@@ -128,7 +130,7 @@ class MINIJSON_API JsonElement: public Serializable {
         explicit JsonElement(JsonElement::Type type);
         explicit JsonElement(bool value);
         explicit JsonElement(double num);
-        explicit JsonElement(long num);
+        explicit JsonElement(int64_t num);
         explicit JsonElement(const std::string &str);
         explicit JsonElement(char const *str);
         JsonElement(const JsonObject& object);
@@ -140,14 +142,16 @@ class MINIJSON_API JsonElement: public Serializable {
         ~JsonElement();
 
         bool& AsBool();
-        double& AsNumber();
+        double& AsDouble();
+        int64_t& AsLongInt();
         void* AsNull() const;
         std::string& AsString();
         JsonObject& AsJsonObject();
         JsonArray& AsJsonArray();
 
         bool ToBool() const;
-        double ToNumber() const;
+        double ToDouble() const;
+        int64_t ToLongInt() const;
         void* ToNull() const;
         std::string ToString() const;
         JsonObject ToJsonObject() const;
@@ -155,7 +159,8 @@ class MINIJSON_API JsonElement: public Serializable {
         
         bool IsNull() const;
         bool IsBool() const;
-        bool IsNumber() const;
+        bool IsLongInt() const;
+        bool IsDouble() const;
         bool IsString() const;
         bool IsJsonObject() const;
         bool IsJsonArray() const;
@@ -226,10 +231,15 @@ namespace rules {
     }
 
     // cast between numeric and JsonElement
-    template<typename T, typename std::enable_if<(std::is_integral<T>::value || std::is_floating_point<T>::value) 
-        && !std::is_same<T, bool>::value>::type* = nullptr>
+    template<typename T, typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value>::type* = nullptr>
     void CastFromJsonElement(const JsonElement& ele, T& value) {
-        value = static_cast<T>(ele.ToNumber());
+        value = static_cast<T>(ele.ToLongInt());
+        return;
+    }
+
+    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    void CastFromJsonElement(const JsonElement& ele, T& value) {
+        value = static_cast<T>(ele.ToDouble());
         return;
     }
 
