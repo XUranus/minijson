@@ -7,12 +7,16 @@ build static/dynamic library:
 mkdir build && cd build
 cmake .. && cmake --build .
 ```
-test and run code coverage:
+
+build and run test coverage:
 ```
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Coverage && cmake --build .
-make minijson_lcov_test # lcov
-make minijson_gcovr_test # gcovr
+# use lcov
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=lcov
+# or use gcovr
+# cmake .. -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=gcovr
+cmake --build .
+make minijson_coverage_test
 ```
 
 ## usage
