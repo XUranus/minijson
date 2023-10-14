@@ -769,8 +769,8 @@ JsonElement JsonParser::ParseNext()
         case JsonScanner::Token::LITERAL_NULL: {
             return JsonElement();
         }
+        default : Panic("scanner return unexpected token: %s", JsonScanner::TokenName(token).c_str());
     }
-    Panic("scanner return unexpected token: %s", JsonScanner::TokenName(token).c_str());
     return JsonElement();
 }
 
