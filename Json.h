@@ -5,7 +5,6 @@
 *   Author:       XUranus
 *   Date:         2022-11-21
 *   Description:  a tiny C++ Json library
-*                 https://github.com/XUranus/minicpp
 *
 ================================================================*/
 
@@ -135,7 +134,6 @@ class MINIJSON_API JsonElement: public Serializable {
         explicit JsonElement(char const *str);
         JsonElement(const JsonObject& object);
         JsonElement(const JsonArray& array);
-
         JsonElement(const JsonElement& ele);
         explicit JsonElement(JsonElement&& ele);
         JsonElement& operator = (const JsonElement& ele);
