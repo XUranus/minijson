@@ -690,19 +690,19 @@ std::string JsonScanner::GetStringValue() const { return m_tmpStrValue; }
 std::string JsonScanner::TokenName(Token token)
 {
     switch (token) {
-        case Token::WHITESPACE: return "WHITESPACE";
-        case Token::NUMBER: return "NUMBER";
-        case Token::STRING: return "STRING";
-        case Token::LITERAL_TRUE: return "LITERAL_TRUE";
-        case Token::LITERAL_FALSE: return "LITERAL_FALSE";
-        case Token::LITERAL_NULL: return "LITERAL_NULL";
-        case Token::COMMA: return "COMMA";
-        case Token::COLON: return "COLON";
-        case Token::ARRAY_BEGIN: return "ARRAY_BEGIN";
-        case Token::ARRAY_END: return "ARRAY_END";
-        case Token::OBJECT_BEGIN: return "OBJECT_BEGIN";
-        case Token::OBJECT_END: return "OBJECT_END";
-        case Token::EOF_TOKEN: return "EOF_TOKEN";
+        case Token::WHITESPACE:     return "WHITESPACE";
+        case Token::NUMBER:         return "NUMBER";
+        case Token::STRING:         return "STRING";
+        case Token::LITERAL_TRUE:   return "LITERAL_TRUE";
+        case Token::LITERAL_FALSE:  return "LITERAL_FALSE";
+        case Token::LITERAL_NULL:   return "LITERAL_NULL";
+        case Token::COMMA:          return "COMMA";
+        case Token::COLON:          return "COLON";
+        case Token::ARRAY_BEGIN:    return "ARRAY_BEGIN";
+        case Token::ARRAY_END:      return "ARRAY_END";
+        case Token::OBJECT_BEGIN:   return "OBJECT_BEGIN";
+        case Token::OBJECT_END:     return "OBJECT_END";
+        case Token::EOF_TOKEN:      return "EOF_TOKEN";
     }
     Panic("Unexpected token");
     return "";
@@ -769,6 +769,12 @@ JsonElement JsonParser::ParseNext()
         case JsonScanner::Token::LITERAL_NULL: {
             return JsonElement();
         }
+        case JsonScanner::Token::WHITESPACE:
+        case JsonScanner::Token::COMMA:
+        case JsonScanner::Token::COLON:
+        case JsonScanner::Token::ARRAY_END:
+        case JsonScanner::Token::OBJECT_END:
+        case JsonScanner::Token::EOF_TOKEN:
         default : Panic("scanner return unexpected token: %s", JsonScanner::TokenName(token).c_str());
     }
     return JsonElement();

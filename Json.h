@@ -54,24 +54,24 @@
     #define MINIJSON_API  __attribute__((__visibility__("default")))
 #endif
 
-#define SERIALIZE_SECTION_BEGIN                                                                 \
-public:                                                                                         \
-    using __XURANUS_JSON_SERIALIZATION_MAGIC__ = void;                                            \
-public:                                                                                         \
-    void _XURANUS_JSON_CPP_SERIALIZE_METHOD_(xuranus::minijson::JsonObject& object, bool toJson)   \
-    {                                                                                             \
+#define SERIALIZE_SECTION_BEGIN                                                                     \
+public:                                                                                             \
+    using __XURANUS_JSON_SERIALIZATION_MAGIC__ = void;                                              \
+public:                                                                                             \
+    void _XURANUS_JSON_CPP_SERIALIZE_METHOD_(xuranus::minijson::JsonObject& object, bool toJson)    \
+    {                                                                                               \
 
-#define SERIALIZE_SECTION_END                                                                   \
-    };                                                                                            \
+#define SERIALIZE_SECTION_END                                                                       \
+    };                                                                                              \
 
-#define SERIALIZE_FIELD(KEY_NAME, ATTR_NAME)                                                    \
-    do {                                                                                          \
+#define SERIALIZE_FIELD(KEY_NAME, ATTR_NAME)                                                        \
+    do {                                                                                            \
         if (toJson) {                                                                               \
-            xuranus::minijson::rules::SerializeTo(object, #KEY_NAME, ATTR_NAME);                        \
+            xuranus::minijson::rules::SerializeTo(object, #KEY_NAME, ATTR_NAME);                    \
         } else {                                                                                    \
-            xuranus::minijson::rules::DeserializeFrom(object, #KEY_NAME, ATTR_NAME);                    \
+            xuranus::minijson::rules::DeserializeFrom(object, #KEY_NAME, ATTR_NAME);                \
         }                                                                                           \
-    } while (0)                                                                                   \
+    } while (0)                                                                                     \
 
 namespace xuranus {
 namespace minijson {
